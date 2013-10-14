@@ -1,0 +1,66 @@
+curl
+openssl
+iconv
+php
+php-cgi
+php-fpm
+php-fpm-control
+# start apache
+httpd
+httpd-selfsign-cert
+htdbm
+htdigest
+htpasswd
+htcacheclean
+fcgistarter
+rotatelogs
+ab
+httpd-control
+suexec
+# end apache
+# start mariadb
+mysql
+mysqlaccess
+mysqladmin
+mysqlbinlog
+mysqlbug
+mysqlcheck
+mysql_client_test
+mysql_client_test_embedded
+mysql_config
+mysql_convert_table_format
+mysqld
+mysqld_multi
+mysqld_safe
+mysqldump
+mysqldumpslow
+mysql_embedded
+mysql_find_rows
+mysql_fix_extensions
+mysqlhotcopy
+mysqlimport
+mysql_install_db
+mysql_plugin
+mysql_secure_installation
+mysql_setpermission
+mysqlshow
+mysqlslap
+mysqltest
+mysqltest_embedded
+mysql_tzinfo_to_sql
+mysql_upgrade
+mysql_waitpid
+mysql_zap
+my_print_defaults
+resolveip
+mysqld-control
+innochecksum
+aria_chk
+aria_dump_log
+aria_ftdump
+aria_pack
+aria_read_log
+# end mariadb
+# cenbia-utils
+checkport
+# end cenbia-utils

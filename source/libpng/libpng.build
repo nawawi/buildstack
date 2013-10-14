@@ -1,0 +1,28 @@
+#!/bin/bash
+# cenbia build script: nawawi@rutweb.com
+# libpng: http://www.libpng.org/pub/png/
+
+NAME="libpng";
+VER="1.6.6";
+SRC_FILE="${NAME}-${VER}.tar.gz";
+SRC_DIR="${NAME}-${VER}";
+DLURL="
+http://sourceforge.net/projects/libpng/files/libpng16/$VER/$SRC_FILE/download
+http://dl.cenbia.com/pkg";
+
+# load config
+source "../../build.d/source-config.sh" &>/dev/null;
+[ -z "${INST_DIR}" ] && { echo "${NAME}: Load config failed"; exit 1; };
+
+_build_setup "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
+_apply_patches;
+
+./configure --prefix=$INST_DIR \
+--disable-static
+_exit_when_failed "Configure" "$?";
+
+make $SMPFLAGS DFA_XTRA=pngusr.dfa
+_exit_when_failed "Make" "$?";
+
+make install
+_exit_and_cleanup "$?" "${SRC_DIR}";

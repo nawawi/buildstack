@@ -1,0 +1,178 @@
+#!/bin/bash
+# cenbia build script: nawawi@rutweb.com
+# php: http://php.net/
+
+NAME="php";
+VER="5.4.20";
+SRC_FILE="${NAME}-${VER}.tar.gz";
+SRC_DIR="${NAME}-${VER}";
+DLURL="
+http://my1.php.net/get/${SRC_FILE}/from/this/mirror
+http://my1.php.net/get/${SRC_FILE}/from/id1.php.net/mirror
+http://dl.cenbia.com/pkg";
+
+# load config
+source "../../build.d/source-config.sh" &>/dev/null;
+[ -z "${INST_DIR}" ] && { echo "${NAME}: Load config failed"; exit 1; };
+
+_build_setup "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
+_apply_patches;
+
+export CFLAGS="${CFLAGS} -fno-strict-aliasing -Wno-pointer-sign";
+export LDFLAGS="${LDFLAGS} -ljemalloc -L$INST_DIR/lib/mysql";
+# rpath
+export LDFLAGS="${LDFLAGS} -Wl,-rpath,$INST_DIR/lib/mysql";
+
+
+EXTENSION_DIR="${INST_DIR}/lib/php/modules";
+PEAR_INSTALLDIR="${INST_DIR}/pear"; 
+export EXTENSION_DIR;
+export PEAR_INSTALLDIR;
+
+_CONFIG_DIR="${INST_DIR}/etc/php";
+export _CONFIG_DIR;
+
+if [ "${_CENBIA_ARCH}" = "64" -a ! -f "/usr/lib/libsybdb.so" -a -f "/usr/lib64/libsybdb.so" ]; then
+    ln -sf /usr/lib64/libsybdb.so /usr/lib/libsybdb.so;
+fi
+
+rm -f TSRM/tsrm_win32.h \
+      TSRM/tsrm_config.w32.h \
+      Zend/zend_config.w32.h \
+      ext/mysqlnd/config-win.h \
+      ext/standard/winver.h \
+      main/win32_internal_function_disabled.h \
+      main/win95nt.h
+
+cat `aclocal --print-ac-dir`/{libtool,ltoptions,ltsugar,ltversion,lt~obsolete}.m4 >>aclocal.m4
+libtoolize --force --copy
+cat `aclocal --print-ac-dir`/{libtool,ltoptions,ltsugar,ltversion,lt~obsolete}.m4 >build/libtool.m4
+
+touch configure.in
+./buildconf --force;
+
+./configure --prefix=$INST_DIR \
+--bindir=$INST_DIR/bin \
+--sbindir=$INST_DIR/bin \
+--libexecdir=$INST_DIR/bin \
+--localstatedir=$ROOT_DIR/data \
+--libdir=$INST_DIR/lib/php \
+--sysconfdir=$_CONFIG_DIR \
+--with-config-file-path=$_CONFIG_DIR \
+--with-config-file-scan-dir=$_CONFIG_DIR/php.d \
+--disable-debug \
+--disable-phar \
+--with-pic \
+--disable-rpath \
+--enable-gd-native-ttf \
+--with-gettext \
+--with-jpeg-dir=$INST_DIR \
+--with-freetype-dir=$INST_DIR \
+--with-kerberos \
+--with-openssl=$INST_DIR \
+--with-mcrypt=$INST_DIR \
+--with-mhash=$INST_DIR \
+--with-mysql=$INST_DIR \
+--with-mysqli=$INST_DIR/bin/mysql_config \
+--with-mysql-sock=$ROOT_DIR/data/mariadb/mysqld.sock \
+--with-pcre-regex=$INST_DIR \
+--with-pdo-mysql=shared,$INST_DIR \
+--with-pdo-sqlite=shared,$INST_DIR \
+--with-pear=$INST_DIR/pear \
+--with-png-dir=$INST_DIR \
+--with-xsl=$INST_DIR \
+--with-zlib=$INST_DIR \
+--with-zlib-dir=$INST_DIR \
+--with-bz2=$INST_DIR \
+--with-freetype-dir=$INST_DIR \
+--with-gdbm=$INST_DIR \
+--with-gettext=$INST_DIR \
+--with-curl=$INST_DIR \
+--with-gd \
+--with-iconv=$INST_DIR \
+--with-libxml-dir=$INST_DIR \
+--with-mssql=shared \
+--with-sqlite3=shared,$INST_DIR \
+--with-xmlrpc=shared \
+--with-imap=$INST_DIR \
+--with-imap-ssl=$INST_DIR \
+--enable-xml \
+--enable-zip \
+--enable-bcmath \
+--enable-calendar \
+--enable-ftp \
+--enable-sockets \
+--enable-json \
+--enable-zip \
+--enable-sysvmsg=shared \
+--enable-sysvshm=shared \
+--enable-sysvsem=shared \
+--enable-posix \
+--enable-fileinfo=shared \
+--enable-intl \
+--with-icu-dir=$INST_DIR \
+--enable-fpm \
+--enable-mbstring \
+--enable-mysqlnd=shared \
+--enable-dba=shared,$INST_DIR --with-db4=$INST_DIR \
+--enable-pcntl=shared \
+--enable-exif=shared \
+--enable-sigchild
+
+_exit_when_failed "Configure" "$?";
+
+make $SMPFLAGS;
+_exit_when_failed "Make" "$?";
+
+export LD_LIBRARY_PATH="$INST_DIR/lib/mysql:${LD_LIBRARY_PATH}";
+
+make install;
+ret="$?";
+
+if [ "$ret" = "0" ]; then
+    mkdir -p $_CONFIG_DIR;
+    mkdir -p $_CONFIG_DIR/php.d;
+    mkdir -p $_CONFIG_DIR/php-fpm.d;
+    mkdir -p $ROOT_DIR/data/php-fpm/session;
+    mkdir -p $ROOT_DIR/data/php-fpm/upload;
+    mkdir -p $ROOT_DIR/data/run/php-fpm;
+    mkdir -p $ROOT_DIR/data/log/php-fpm;
+    chown nobody:nobody $ROOT_DIR/data/php-fpm;
+    chown nobody:nobody $ROOT_DIR/data/php-fpm/session;
+    chown nobody:nobody $ROOT_DIR/data/php-fpm/upload;
+    chown nobody:nobody $ROOT_DIR/data/run/php-fpm;
+    chown nobody:nobody $ROOT_DIR/data/log/php-fpm;
+
+    cp -fv ../config/php-fpm.conf $_CONFIG_DIR/php-fpm.conf;
+    cp -fv ../config/php-fpm-*.conf $_CONFIG_DIR/php-fpm.d/;
+    cp -fv ../config/php-fpm-control.sh $INST_DIR/bin/php-fpm-control;
+    cp -fv ../config/php.ini $_CONFIG_DIR/php.ini;
+
+    for f in $INST_DIR/bin/php-fpm-control $_CONFIG_DIR/php-fpm.conf $_CONFIG_DIR/php-fpm.d/*.conf $_CONFIG_DIR/php.ini; do
+        sed -i -e "s|@INST_DIR|$INST_DIR|g" $f;
+        sed -i -e "s|@ROOT_DIR|$ROOT_DIR|g" $f;
+        sed -i -e "s|@CONFIG_DIR|$_CONFIG_DIR|g" $f;
+    done
+
+    chmod 755 $INST_DIR/bin/php-fpm-control;
+
+    if [ -d "${INST_DIR}/php/man" ]; then
+        mkdir -p $INST_DIR/share/man;
+        rsync -artvl $INST_DIR/php/man/* $INST_DIR/share/man/;
+        rm -rf $INST_DIR/php/man;
+    fi
+    if [ -d "${INST_DIR}/php/fpm" ]; then
+        mkdir -p $INST_DIR/share/doc/php-fpm;
+        rsync -artvl $INST_DIR/php/fpm/* $INST_DIR/share/doc/php-fpm/;
+        rm -rf $INST_DIR/php/fpm;
+    fi
+
+    for f in $EXTENSION_DIR/*.so; do
+        P=$(basename $f .so);
+        echo ";extension=$(basename $f)" > $_CONFIG_DIR/php.d/$P.ini;
+    done
+
+    rm -rf $INST_DIR/php;
+fi
+
+_exit_and_cleanup "$ret" "${SRC_DIR}";

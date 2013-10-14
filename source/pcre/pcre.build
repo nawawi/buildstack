@@ -1,0 +1,28 @@
+#!/bin/bash
+# cenbia build script: nawawi@rutweb.com
+# pcre: http://www.pcre.org/
+
+NAME="pcre";
+VER="8.33";
+SRC_FILE="${NAME}-${VER}.tar.gz";
+SRC_DIR="${NAME}-${VER}";
+DLURL="ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre http://dl.cenbia.com/pkg";
+
+# load config
+source "../../build.d/source-config.sh" &>/dev/null;
+[ -z "${INST_DIR}" ] && { echo "${NAME}: Load config failed"; exit 1; };
+
+_build_setup "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
+
+./configure --prefix=$INST_DIR \
+--enable-utf8 --enable-unicode-properties \
+--disable-cpp \
+--enable-jit \
+--disable-static
+_exit_when_failed "Configure" "$?";
+
+make $SMPFLAGS;
+_exit_when_failed "Make" "$?";
+
+make install;
+_exit_and_cleanup "$?" "${SRC_DIR}";

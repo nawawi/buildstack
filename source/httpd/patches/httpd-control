@@ -1,0 +1,150 @@
+#!/bin/bash
+source @INST_DIR/etc/cenbia-environment &>/dev/null || { echo "Failed to load library"; exit 1; };
+export LD_LIBRARY_PATH="@INST_DIR/lib/httpd:${LD_LIBRARY_PATH}";
+
+ulimit -HSn 32768;
+
+httpd="@INST_DIR/bin/httpd";
+pidfile="@PID_FILE";
+prog="httpd";
+RETVAL=0
+
+STARTTIMEOUT=120
+STOPTIMEOUT=60
+
+ENV="env -i LANG=C LC_MESSAGES=en_US";
+
+_chkcrt() {
+    if [ ! -f "@INST_DIR/etc/httpd/ssl.crt/server.crt" ] || [ ! -f "@INST_DIR/etc/httpd/ssl.key/server.key" ]; then
+        @INST_DIR/bin/httpd-selfsign-cert &>/dev/null;
+    fi
+}
+
+start() {
+    _msg "Starting $prog.";
+    _chkcrt;
+    $ENV $httpd -k start -DSSL &>/dev/null;
+    RETVAL="$?";
+    if [ $RETVAL = 0 ]; then
+        _success;
+    else
+        _failure;
+    fi
+    return $RETVAL;
+}
+
+stop() {
+	if [ ! -f "$pidfile" ]; then
+	    _msg "Stopping $prog." && _success;
+        $httpd -k stop &>/dev/null;
+	    return 0;
+	fi
+    _msg "Stopping $prog.";
+    HTTPPID="$(cat $pidfile)";
+	if [ -n "$HTTPPID" ]; then
+        $httpd -k stop &>/dev/null;
+	    ret=$?;
+	    if [ $ret -eq 0 ]; then
+            TIMEOUT="$STOPTIMEOUT";
+            while [ $TIMEOUT -gt 0 ]; do
+                kill -0 "$HTTPPID" >/dev/null 2>&1 || break
+                _printdot;
+                sleep 1;
+                let TIMEOUT=${TIMEOUT}-1;
+            done
+            if [ $TIMEOUT -eq 0 ]; then
+                echo "Timeout error occurred trying to stop HTTP Daemon."
+                ret=1
+                _failure;
+            else
+                _success;
+            fi
+        else
+            _failure;
+        fi
+    else
+        $httpd -k stop &>/dev/null;
+        ret=$?;
+	    if [ $ret -eq 0 ]; then
+            _success;
+        else
+            _failure;
+        fi
+    fi
+	return $ret;
+}
+
+reload() {
+    _msg "Reloading $prog.";
+    if [ -f "$pidfile" ]; then
+        HTTPPID="$(cat $pidfile)";
+        if kill -HUP $HTTPPID 2>/dev/null ; then 
+            _success;
+            exit 0;
+        else
+            _failure;
+            exit 1;
+        fi
+    fi
+     HTTPPID="$(pidof $httpd)";
+    if [ -n "${HTTPPID}" ]; then
+        if kill -HUP $HTTPPID 2>/dev/null ; then 
+            _success;
+            exit 0;
+        fi
+    fi
+    _failure;
+    exit 1;
+}
+
+status() {
+    if [ -f "$pidfile" ]; then
+        HTTPPID="$(cat $pidfile)";
+        if kill -0 $HTTPPID 2>/dev/null ; then 
+            echo "HTTPD running ($HTTPPID)";
+            exit 0;
+        else
+            echo "HTTPD is not running";
+            rm -f $mysqld_pid;
+            exit 1;
+        fi
+    fi
+    HTTPPID="$(pidof $httpd)";
+    if [ -n "${HTTPPID}" ]; then
+        echo "HTTPDD running ($HTTPPID)";
+        exit 0;
+    fi
+    echo "HTTPD is not running";
+    exit 1;
+}
+
+restart(){
+    stop;
+    start;
+}
+
+case "$1" in
+    start)
+        start
+    ;;
+    stop)
+        stop
+    ;;
+    status)
+        status
+	;;
+    restart)
+        restart
+	;;
+    reload)
+        reload
+	;;
+    configtest)
+        $httpd -t
+    ;;
+    *)
+        echo "Usage: $prog {start|stop|restart|reload|status|configtest}"
+        exit 1;
+esac
+
+exit $?;

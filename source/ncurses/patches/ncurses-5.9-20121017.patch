@@ -1,0 +1,116 @@
+# ncurses 5.9 - patch 20121017 - Thomas E. Dickey
+#
+# ------------------------------------------------------------------------------
+#
+# Ncurses 5.9 is at
+# 	ftp.gnu.org:/pub/gnu
+#
+# Patches for ncurses 5.9 are in the subdirectory
+# 	ftp://invisible-island.net/ncurses/5.9
+#
+# ------------------------------------------------------------------------------
+# ftp://invisible-island.net/ncurses/5.9/ncurses-5.9-20121017.patch.gz
+# patch by Thomas E. Dickey <dickey@invisible-island.net>
+# created  Wed Oct 17 09:57:52 UTC 2012
+# ------------------------------------------------------------------------------
+# NEWS                     |    6 +++++-
+# dist.mk                  |    4 ++--
+# ncurses/tty/hardscroll.c |    3 +--
+# package/debian/changelog |    6 +++---
+# package/ncurses.spec     |    2 +-
+# 5 files changed, 12 insertions(+), 9 deletions(-)
+# ------------------------------------------------------------------------------
+Index: NEWS
+Prereq:  1.1963 
+--- ncurses-5.9-20121013+/NEWS	2012-10-13 23:19:59.000000000 +0000
++++ ncurses-5.9-20121017/NEWS	2012-10-17 09:31:53.000000000 +0000
+@@ -25,7 +25,7 @@
+ -- sale, use or other dealings in this Software without prior written        --
+ -- authorization.                                                            --
+ -------------------------------------------------------------------------------
+--- $Id: NEWS,v 1.1963 2012/10/13 23:19:59 tom Exp $
++-- $Id: NEWS,v 1.1964 2012/10/17 09:31:53 tom Exp $
+ -------------------------------------------------------------------------------
+ 
+ This is a log of changes that ncurses has gone through since Zeyd started
+@@ -45,6 +45,10 @@
+ Changes through 1.9.9e did not credit all contributions;
+ it is not possible to add this information.
+ 
++20121017
++	+ fix change to _nc_scroll_optimize(), which incorrectly freed memory 
++	  (Redhat #866989).
++
+ 20121013
+ 	+ add vte-2012, gnome-2012, making these the defaults for vte/gnome
+ 	  (patch by Christian Persch).
+Index: dist.mk
+Prereq:  1.896 
+--- ncurses-5.9-20121013+/dist.mk	2012-10-13 14:37:04.000000000 +0000
++++ ncurses-5.9-20121017/dist.mk	2012-10-17 09:32:03.000000000 +0000
+@@ -25,7 +25,7 @@
+ # use or other dealings in this Software without prior written               #
+ # authorization.                                                             #
+ ##############################################################################
+-# $Id: dist.mk,v 1.896 2012/10/13 14:37:04 tom Exp $
++# $Id: dist.mk,v 1.897 2012/10/17 09:32:03 tom Exp $
+ # Makefile for creating ncurses distributions.
+ #
+ # This only needs to be used directly as a makefile by developers, but
+@@ -37,7 +37,7 @@
+ # These define the major/minor/patch versions of ncurses.
+ NCURSES_MAJOR = 5
+ NCURSES_MINOR = 9
+-NCURSES_PATCH = 20121013
++NCURSES_PATCH = 20121017
+ 
+ # We don't append the patch to the version, since this only applies to releases
+ VERSION = $(NCURSES_MAJOR).$(NCURSES_MINOR)
+Index: ncurses/tty/hardscroll.c
+Prereq:  1.50 
+--- ncurses-5.9-20121013+/ncurses/tty/hardscroll.c	2012-09-01 23:24:49.000000000 +0000
++++ ncurses-5.9-20121017/ncurses/tty/hardscroll.c	2012-10-17 09:01:10.000000000 +0000
+@@ -147,7 +147,7 @@
+ 
+ #include <curses.priv.h>
+ 
+-MODULE_ID("$Id: hardscroll.c,v 1.50 2012/09/01 23:24:49 tom Exp $")
++MODULE_ID("$Id: hardscroll.c,v 1.51 2012/10/17 09:01:10 tom Exp $")
+ 
+ #if defined(SCROLLDEBUG) || defined(HASHDEBUG)
+ 
+@@ -205,7 +205,6 @@
+ 				       oldnums(SP_PARM));
+ 	if (!new_oldnums)
+ 	    return;
+-	FreeIfNeeded(oldnums(SP_PARM));
+ 	oldnums(SP_PARM) = new_oldnums;
+ 	OLDNUM_SIZE(SP_PARM) = need_lines;
+     }
+Index: package/debian/changelog
+--- ncurses-5.9-20121013+/package/debian/changelog	2012-10-13 23:21:16.000000000 +0000
++++ ncurses-5.9-20121017/package/debian/changelog	2012-10-17 09:47:30.000000000 +0000
+@@ -1,8 +1,8 @@
+-ncurses6 (5.9-20121013) unstable; urgency=low
++ncurses6 (5.9-20121017) unstable; urgency=low
+ 
+-  * latest weekly patch
++  * Redhat #866989
+ 
+- -- Thomas E. Dickey <dickey@invisible-island.net>  Sat, 13 Oct 2012 19:21:12 -0400
++ -- Thomas E. Dickey <dickey@invisible-island.net>  Wed, 17 Oct 2012 05:47:25 -0400
+ 
+ ncurses6 (5.9-20120608) unstable; urgency=low
+ 
+Index: package/ncurses.spec
+--- ncurses-5.9-20121013+/package/ncurses.spec	2012-10-13 23:20:57.000000000 +0000
++++ ncurses-5.9-20121017/package/ncurses.spec	2012-10-17 09:46:51.000000000 +0000
+@@ -1,7 +1,7 @@
+ Summary: shared libraries for terminal handling
+ Name: ncurses6
+ Release: 5.9
+-Version: 20121013
++Version: 20121017
+ License: X11
+ Group: Development/Libraries
+ Source: ncurses-%{release}-%{version}.tgz

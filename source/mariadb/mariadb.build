@@ -1,0 +1,153 @@
+#!/bin/bash
+# cenbia build script: nawawi@rutweb.com
+# mariadb: http://mariadb.org
+
+NAME="mariadb";
+VER="5.5.31";
+SRC_FILE="${NAME}-${VER}.tar.gz";
+SRC_DIR="${NAME}-${VER}";
+DLURL="
+https://downloads.mariadb.org/f/$SRC_DIR/kvm-tarbake-jaunty-x86/$SRC_FILE/from/http:/ftp.kaist.ac.kr/mariadb
+http://dl.cenbia.com/pkg";
+
+# load config
+source "../../build.d/source-config.sh" &>/dev/null;
+[ -z "${INST_DIR}" ] && { echo "${NAME}: Load config failed"; exit 1; };
+
+_build_setup "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
+_apply_patches;
+
+_CONFIG_DIR="${INST_DIR}/etc/mysql";
+export _CONFIG_DIR;
+
+CFLAGS="${CFLAGS} -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -fPIC";
+CXXFLAGS="${CFLAGS}";
+LDFLAGS="${LDFLAGS} -pie";
+LDFLAGS="${LDFLAGS} -ljemalloc";
+export CFLAGS CXXFLAGS LDFLAGS;
+
+cmake . -DBUILD_CONFIG=mysql_release \
+-DINSTALL_LAYOUT=STANDALONE \
+-DCMAKE_BUILD_TYPE=Release \
+-DFEATURE_SET="community" \
+-DCMAKE_INSTALL_PREFIX="${INST_DIR}" \
+-DCMAKE_INSTALL_RPATH="${CENBIA_RPATH}" \
+-DCMAKE_INSTALL_RPATH_USE_LINK_PATH=TRUE \
+-DINSTALL_INCLUDEDIR="include/mysql" \
+-DINSTALL_INFODIR="share/info" \
+-DINSTALL_LIBDIR="lib/mysql" \
+-DINSTALL_MANDIR="share/man" \
+-DINSTALL_DOCDIR="share/doc/mysql" \
+-DINSTALL_DOCREADMEDIR="share/doc/mysql" \
+-DINSTALL_MYSQLSHAREDIR="share/mysql" \
+-DINSTALL_MYSQLTESTDIR="share/mysql-test" \
+-DINSTALL_PLUGINDIR="lib/mysql/plugin" \
+-DINSTALL_SBINDIR=bin \
+-DINSTALL_SCRIPTDIR=bin \
+-DINSTALL_SQLBENCHDIR="share/mysql-bench" \
+-DINSTALL_SUPPORTFILESDIR="share/mysql/support" \
+-DINSTALL_SYSCONFDIR="${_CONFIG_DIR}" \
+-DMYSQL_DATADIR="${ROOT_DIR}/data/mariadb" \
+-DMYSQL_UNIX_ADDR="${ROOT_DIR}/data/mariadb/mysqld.sock" \
+-DENABLED_LOCAL_INFILE=ON \
+-DENABLE_DTRACE=OFF \
+-DWITH_EMBEDDED_SERVER=ON \
+-DWITH_READLINE=ON \
+-DWITH_SSL=system \
+-DWITH_ZLIB=system \
+-DWITH_UNIT_TESTS=OFF \
+-DWITH_MYSQLD_LDFLAGS="-Wl,-z,relro,-z,now"
+_exit_when_failed "Cmake" "$?";
+
+# nawawi: dirty patch for "Error: CFI instruction used without previous .cfi_startproc"
+if [ "${_CENBIA_ARCH}" = "32" -a "x$(gcc --version |grep "4.4.7")" != "x" ]; then
+    sed -i -e "s|^#define MY_CONTEXT_USE_I386_GCC_ASM|#define MY_CONTEXT_USE_UCONTEXT|g" ./include/my_context.h;
+fi
+
+make $SMPFLAGS VERBOSE=1;
+_exit_when_failed "Make" "$?";
+
+make install;
+ret=$?;
+
+if [ "$ret" = "0" ]; then
+    # variable
+    _user="nobody";
+    _datadir="${ROOT_DIR}/data/mariadb";
+    _rundir="${ROOT_DIR}/data/run/mysqld";
+    _logdir="${ROOT_DIR}/data/log";
+    _logfile="${_logdir}/mysqld.log";
+    _pidfile="${_rundir}/mysqld.pid";
+    _socket="${ROOT_DIR}/data/mariadb/mysqld.sock";
+    _mycnf="${_CONFIG_DIR}/my.cnf";
+
+    mkdir -p $INST_DIR/etc/mysql/my.cnf.d;
+
+    if [ -f "../patches/my.cnf" ]; then
+        cp -f ../patches/my.cnf $_mycnf;
+        sed -i -e "s|datadir=.*|datadir=$_datadir|g" $_mycnf;
+        sed -i -e "s|socket=.*|socket=$_socket|g" $_mycnf;
+        sed -i -e "s|plugin_dir=.*|plugin_dir=$INST_DIR/lib/mysql/plugin|g" $_mycnf;
+        sed -i -e "s|includedir.*|includedir $_CONFIG_DIR/my.cnf.d|g" $_mycnf;
+        sed -i -e "s|user=.*|user=$_user|g" $_mycnf;
+        sed -i -e "s|log-error=.*|log-error=$_logfile|g" $_mycnf;
+        sed -i -e "s|pid-file=.*|pid-file=$_pidfile|g" $_mycnf;
+    fi
+
+    # clean
+    rm -rf $INST_DIR/data;
+    rm -rf $INST_DIR/share/mysql/support/SELinux;
+
+    mkdir -p $_datadir;
+    mkdir -p $_logdir;
+    mkdir -p $_rundir;
+    [ "$?" = "0" ] && chown -R $_user $_rundir;
+
+    if [ -x "${INST_DIR}/bin/mysql_install_db" ]; then
+        sed -i -e "s|^basedir=.*|basedir=\"$INST_DIR\"|g" $INST_DIR/bin/mysql_install_db;
+        sed -i -e "s|^user=.*|user=\"$_user\"|g" $INST_DIR/bin/mysql_install_db;
+        sed -i -e "s|/scripts/mysql_install_db|$INST_DIR/bin/mysql_install_db|g" $INST_DIR/bin/mysql_install_db;
+        $INST_DIR/bin/mysql_install_db --skip-name-resolve &>/dev/null;
+    fi
+
+    if [ -x "${INST_DIR}/bin/mysqld_safe" ]; then
+        sed -i -e "s|#!/bin/sh|#!/bin/bash|g" $INST_DIR/bin/mysqld_safe;
+        sed -i -e "s|^user=.*|user=\"$_user\"|g" $INST_DIR/bin/mysqld_safe;
+        sed -i -e "s|^pid_file=.*|pid_file=\"$_pidfile\"|g" $INST_DIR/bin/mysqld_safe;
+        sed -i -e "s|^err_log=.*|err_log=\"$_logfile\"|g" $INST_DIR/bin/mysqld_safe;
+    fi
+
+    if [ -f "../patches/mysql-logrotate" -a -f "$INST_DIR/etc/logrotate.d/mysql" ]; then
+        _mname="${INST_DIR}/etc/logrotate.d/mysqld";
+        cp -f ../patches/mysql-logrotate $_mname;
+        sed -i -e "s|@INST_DIR|$INST_DIR|g" $_mname;
+        sed -i -e "s|@LOGFILE|$_logfile|g" $_mname;
+        sed -i -e "s|@USER|$_user|g" $_mname;
+    fi
+
+    if [ -f "../patches/mysqld-control" ]; then
+        _mname="${INST_DIR}/bin/mysqld-control";
+        cp -f ../patches/mysqld-control $_mname;
+        sed -i -e "s|@INST_DIR|$INST_DIR|g" $_mname;
+        sed -i -e "s|@LOG_FILE|$_logfile|g" $_mname;
+        sed -i -e "s|@PID_FILE|$_pidfile|g" $_mname;
+        sed -i -e "s|@USER|$_user|g" $_mname;
+        sed -i -e "s|@BIN_DIR|$INST_DIR/bin|g" $_mname;
+        sed -i -e "s|@DATA_DIR|$_datadir|g" $_mname;
+        sed -i -e "s|@SOCKET|$_socket|g" $_mname;
+        sed -i -e "s|@CONFIG_DIR|$_CONFIG_DIR|g" $_mname;
+        chmod 755 $_mname;
+        rm -f $INST_DIR/bin/rcmysql;
+    fi
+
+    # clean
+    rm -rf $INST_DIR/etc/my.cnf.d;
+    rm -f $INST_DIR/etc/my.cnf;
+    rm -rf $_CONFIG_DIR/logrotate.d;
+    rm -rf $_CONFIG_DIR/init.d;
+    rm -rf $INST_DIR/etc/init.d;
+    rm -rf $INST_DIR/etc/logrotate.d;
+fi
+
+_exit_and_cleanup "$ret" "${SRC_DIR}";
+

@@ -1,0 +1,83 @@
+#!/bin/bash
+# cenbia build script: nawawi@rutweb.com
+# ncurses: ftp://invisible-island.net/ncurses/
+
+NAME="ncurses";
+VER="5.9";
+SRC_FILE="${NAME}-${VER}.tar.gz";
+SRC_DIR="${NAME}-${VER}";
+DLURL="ftp://invisible-island.net/ncurses http://dl.cenbia.com/pkg";
+
+# load config
+source "../../build.d/source-config.sh" &>/dev/null;
+[ -z "${INST_DIR}" ] && { echo "${NAME}: Load config failed"; exit 1; };
+
+_build_setup "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
+_apply_patches;
+
+# clean if already install
+find $INST_DIR/include/ -name "*curses*" | xargs rm -f;
+find $INST_DIR/include/ -name "*term*" | xargs rm -f;
+find $INST_DIR/lib/ -name "*curses*" | xargs rm -f;
+rm -rf $INST_DIR/include/ncurses*;
+
+# build libncurses and libncursesw
+_configure() {
+    ./configure \
+    --prefix=$INST_DIR \
+    --with-shared --without-ada --with-ospeed=unsigned \
+    --enable-hard-tabs --enable-xmc-glitch --enable-colorfgbg \
+    --with-terminfo-dirs=$INST_DIR/share/terminfo \
+    --enable-overwrite \
+    --enable-pc-files \
+    --with-pkg-config-libdir=$INST_DIR/lib/pkgconfig \
+    --with-termlib=tinfo \
+    --with-chtype=long \
+    --with-xterm-kbs=DEL \
+    --without-ada \
+    --without-tests \
+    $*
+}
+
+mkdir narrowc widec;
+if cd narrowc; then
+    ln -s ../configure .;
+    _configure --with-ticlib
+    _exit_when_failed "Configure" "$?";
+
+    make $SMPFLAGS;
+    _exit_when_failed "Make" "$?";
+fi
+
+if cd ../widec; then
+    ln -s ../configure .;
+    _configure --enable-widec --without-progs
+    _exit_when_failed "Configure" "$?";
+
+    make $SMPFLAGS;
+    _exit_when_failed "Make" "$?";
+
+    make install;
+    _exit_when_failed "Make" "$?";
+fi
+
+cd ..;
+make -C narrowc install.{libs,progs,data};
+_exit_when_failed "Make" "$?";
+rm -f $INST_DIR/lib/libtinfo.*;
+
+make -C widec install.{libs,includes,man}
+_exit_when_failed "Make" "$?";
+
+mkdir $INST_DIR/include/ncurses{,w};
+for l in $INST_DIR/include/*.h; do
+    ln -s ../$(basename $l) $INST_DIR/include/ncurses;
+    ln -s ../$(basename $l) $INST_DIR/include/ncursesw;
+done
+
+# clean
+rm -f $INST_DIR/lib/terminfo;
+rm -f $INST_DIR/lib/pkgconfig/{*_g,ncurses++*}.pc;
+
+_exit_and_cleanup "0" "${SRC_DIR}";
+

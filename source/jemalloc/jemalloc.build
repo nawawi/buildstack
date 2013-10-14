@@ -1,0 +1,25 @@
+#!/bin/bash
+# cenbia build script: nawawi@rutweb.com
+# jemalloc: http://www.canonware.com/jemalloc
+
+NAME="jemalloc";
+VER="3.4.0";
+SRC_FILE="${NAME}-${VER}.tar.bz2";
+SRC_DIR="${NAME}-${VER}";
+DLURL="http://www.canonware.com/download/jemalloc http://dl.cenbia.com/pkg";
+
+# load config
+source "../../build.d/source-config.sh" &>/dev/null;
+[ -z "${INST_DIR}" ] && { echo "${NAME}: Load config failed"; exit 1; };
+
+_build_setup "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
+
+./configure \
+--prefix=$INST_DIR
+_exit_when_failed "Configure" "$?";
+
+make $SMPFLAGS;
+_exit_when_failed "Make" "$?";
+
+make install;
+_exit_and_cleanup "$?" "${SRC_DIR}";

@@ -1,0 +1,27 @@
+#!/bin/bash
+# cenbia build script: nawawi@rutweb.com
+# phpMyAdmin: http://www.phpmyadmin.net
+
+NAME="phpMyAdmin";
+VER="4.0.4";
+SRC_FILE="${NAME}-${VER}-english.tar.gz";
+SRC_DIR="${NAME}-${VER}-english";
+DLURL="
+http://downloads.sourceforge.net/project/phpmyadmin/phpMyAdmin/$VER/$SRC_FILE 
+http://dl.cenbia.com/pkg";
+
+# load config
+source "../../build.d/source-config.sh" &>/dev/null;
+[ -z "${INST_DIR}" ] && { echo "${NAME}: Load config failed"; exit 1; };
+
+_build_setup "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
+cd ../;
+mv -v $SRC_DIR $INST_DIR/phpmyadmin;
+ret="$?";
+if [ "$ret" = "0" ]; then
+    cp ./config/config.inc.php $INST_DIR/phpmyadmin/config.inc.php;
+    mkdir -p $INST_DIR/etc/httpd/conf.d;
+    sed -e "s|@INST_DIR|$INST_DIR|g" ./config/pma.conf > $INST_DIR/etc/httpd/conf.d/pma.conf;
+fi
+
+_exit_and_cleanup "$ret" "${SRC_DIR}";

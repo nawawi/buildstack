@@ -1,0 +1,10 @@
+--- support/suexec.c-ori	2013-07-13 21:40:18.126523025 +0800
++++ support/suexec.c	2013-07-13 21:40:40.578090649 +0800
+@@ -125,6 +125,7 @@
+     "UNIQUE_ID=",
+     "USER_NAME=",
+     "TZ=",
++    "LD_LIBRARY_PATH=",
+     NULL
+ };
+ 

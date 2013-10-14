@@ -1,0 +1,28 @@
+#!/bin/bash
+# cenbia build script: nawawi@rutweb.com
+# gd: http://www.libgd.org, http://libgd.bitbucket.org/
+
+NAME="gd";
+VER="2.0.35";
+SRC_FILE="${NAME}-${VER}.tar.gz";
+SRC_DIR="${NAME}-${VER}";
+DLURL="http://dl.cenbia.com/pkg";
+
+# load config
+source "../../build.d/source-config.sh" &>/dev/null;
+[ -z "${INST_DIR}" ] && { echo "${NAME}: Load config failed"; exit 1; };
+
+_build_setup "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
+_apply_patches;
+
+./configure \
+--prefix=$INST_DIR \
+--with-png=$INST_DIR \
+--with-freetype=$INST_DIR \
+--with-jpeg=$INST_DIR \
+--disable-rpath \
+--disable-static
+_exit_when_failed "Configure" "$?";
+
+make install;
+_exit_and_cleanup "$?" "${SRC_DIR}";

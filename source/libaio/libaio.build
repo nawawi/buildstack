@@ -1,0 +1,21 @@
+#!/bin/bash
+# cenbia build script: nawawi@rutweb.com
+# libaio: http://mirror.internode.on.net/pub/fedora/linux/releases/test/19-Alpha/Fedora/source/SRPMS/l/libaio-0.3.109-7.fc19.src.rpm
+
+NAME="libaio";
+VER="0.3.109";
+SRC_FILE="${NAME}-${VER}.tar.gz";
+SRC_DIR="${NAME}-${VER}";
+DLURL="http://dl.cenbia.com/pkg";
+
+# load config
+source "../../build.d/source-config.sh" &>/dev/null;
+[ -z "${INST_DIR}" ] && { echo "${NAME}: Load config failed"; exit 1; };
+
+_build_setup "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
+
+make prefix=$INST_DIR
+_exit_when_failed "Make" "$?";
+
+make prefix=$INST_DIR install
+_exit_and_cleanup "$?" "${SRC_DIR}";

@@ -1,0 +1,39 @@
+#!/bin/bash
+# cenbia build script: nawawi@rutweb.com
+# bzip2: http://www.bzip.org/
+
+NAME="bzip2";
+VER="1.0.6";
+SRC_FILE="${NAME}-${VER}.tar.gz";
+SRC_DIR="${NAME}-${VER}";
+DLURL="http://www.bzip.org/1.0.6 http://dl.cenbia.com/pkg";
+
+# load config
+source "../../build.d/source-config.sh" &>/dev/null;
+[ -z "${INST_DIR}" ] && { echo "${NAME}: Load config failed"; exit 1; };
+
+_require "rsync";
+_build_setup "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
+_apply_patches;
+
+make $SMPFLAGS -f Makefile-libbz2_so CFLAGS="-D_SRC_FILE_OFFSET_BITS=64 -fpic -fPIC ${CFLAGS}" all
+_exit_when_failed "Make" "$?";
+
+rm -f *.o
+make $SMPFLAGS CFLAGS="-D_SRC_FILE_OFFSET_BITS=64 ${CFLAGS}" all
+_exit_when_failed "Make" "$?";
+
+make install PREFIX=$INST_DIR
+_exit_when_failed "Make install" "$?";
+
+rsync -artl $INST_DIR/man/* $INST_DIR/share/man/
+rm -rf $INST_DIR/man
+cp -fv libbz2.so.1.0.6 $INST_DIR/lib/
+
+_CDIR=$(pwd);
+cd $INST_DIR/lib/
+ln -sf libbz2.so.1.0.6 libbz2.so
+ln -sf libbz2.so.1.0.6 libbz2.so.1
+cd $_CDIR;
+
+_exit_and_cleanup "0" "${SRC_DIR}";

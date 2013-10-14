@@ -1,0 +1,33 @@
+#!/bin/bash
+# cenbia build script: nawawi@rutweb.com
+# mcrypt: http://mcrypt.sourceforge.net/
+
+NAME="libmcrypt";
+VER="2.5.8";
+SRC_FILE="${NAME}-${VER}.tar.gz";
+SRC_DIR="${NAME}-${VER}";
+DLURL="http://downloads.sourceforge.net/mcrypt http://dl.cenbia.com/pkg";
+
+# load config
+source "../../build.d/source-config.sh" &>/dev/null;
+[ -z "${INST_DIR}" ] && { echo "${NAME}: Load config failed"; exit 1; };
+
+_require "rsync";
+_build_setup "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
+_apply_patches;
+
+./configure --prefix=$INST_DIR
+_exit_when_failed "Configure" "$?";
+
+make $SMPFLAGS
+_exit_when_failed "Make" "$?";
+
+make install
+ret="$?";
+
+if [ "$ret" = "0" ]; then
+    rsync -artl $INST_DIR/man/* $INST_DIR/share/man/
+    rm -rf $INST_DIR/man
+fi
+
+_exit_and_cleanup "$ret" "${SRC_DIR}";

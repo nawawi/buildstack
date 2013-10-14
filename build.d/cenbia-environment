@@ -1,0 +1,41 @@
+# -*-Shell-script-*-
+# shell scripts: nawawi@rutweb.com
+#
+# This file contains environment setting and function to be used by all
+# cenbia shell scripts.
+#
+_CLDPATH="@INST_DIR/lib:@INST_DIR/lib/mysql:@INST_DIR/lib/httpd";
+_CLIBPATH64="${_CLDPATH}:@INST_DIR/lib64:/lib64:/usr/lib64:/usr/local/lib64:/lib:/usr/lib:/usr/local/lib";
+_CLIBPATH="${_CLDPATH}:@INST_DIR/lib32:/lib32:/usr/lib32:/usr/local/lib32:/lib:/usr/lib:/usr/local/lib";
+if [ "$(uname -m | grep -c 64)" = "1" ]; then
+    _CLIBPATH="${_CLIBPATH64}";
+fi
+if [ -n "${LD_LIBRARY_PATH}" ]; then
+    export LD_LIBRARY_PATH="${_CLIBPATH}:${LD_LIBRARY_PATH}";
+else
+    export LD_LIBRARY_PATH="${_CLIBPATH}";
+fi
+export PATH=@ROOT_DIR/exec:@INST_DIR/bin:$PATH;
+export HISTFILE=@ROOT_DIR/.history;
+
+_success() {
+    echo " OK! $@";
+}
+_failure() {
+    echo " FAILED! $@";
+}
+_printdot() {
+    echo -n ".";
+}
+_msg() {
+    echo -n "$@";
+}
+
+_chkport() {
+    if type -p netstat &>/dev/null; then
+        if netstat -an | egrep ":$1 .*LISTEN" > /dev/null; then
+            return 0;
+        fi
+    fi
+    return 1
+}

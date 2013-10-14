@@ -1,0 +1,61 @@
+#!/bin/bash
+# cenbia build script: nawawi@rutweb.com
+# libc-client: ftp://ftp.cac.washington.edu/imap/
+
+NAME="imap";
+VER="2007e";
+SRC_FILE="${NAME}-${VER}.tar.gz";
+SRC_DIR="${NAME}-${VER}";
+DLURL="ftp://ftp.cac.washington.edu/imap http://dl.cenbia.com/pkg";
+
+# load config
+source "../../build.d/source-config.sh" &>/dev/null;
+[ -z "${INST_DIR}" ] && { echo "${NAME}: Load config failed"; exit 1; };
+
+_build_setup "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
+_apply_patches;
+
+# Kerberos setup (centos)
+test -f /etc/profile.d/krb5-devel.sh && source /etc/profile.d/krb5-devel.sh
+test -f /etc/profile.d/krb5.sh && source /etc/profile.d/krb5.sh
+GSSDIR="$(krb5-config --prefix)"
+
+soname="c-client";
+somajver="2007";
+shlibname="lib${soname}.so.${somajver}";
+ssldir="${INST_DIR}/etc/pki/tls";
+includedir="${INST_DIR}/include";
+libdir="${INST_DIR}/lib";
+
+EXTRACFLAGS="$(pkg-config --cflags openssl 2>/dev/null)";
+export CFLAGS="${CFLAGS} ${EXTRACFLAGS} -fPIC -fno-strict-aliasing -Wno-pointer-sign -Wno-parentheses";
+
+echo -e "y\ny" | \
+make $SMPFLAGS lnp \
+IP=6 \
+EXTRACFLAGS="$CFLAGS" \
+EXTRALDFLAGS="$LDFLAGS" \
+EXTRAAUTHENTICATORS=gss \
+SPECIALS="GSSDIR=${GSSDIR} LOCKPGM=$INST_DIR/bin/mlock SSLCERTS=${ssldir}/certs SSLDIR=${ssldir} SSLINCLUDE=${includedir}/openssl SSLKEYS=${ssldir}/private SSLLIB=${libdir}" \
+SSLTYPE=unix \
+CCLIENTLIB=$(pwd)/c-client/${shlibname} \
+SHLIBBASE=${soname} \
+SHLIBNAME=${shlibname}
+_exit_when_failed "Make" "$?";
+
+# install
+rm -rf $INST_DIR/include/imap;
+rm -f $INST_DIR/lib/lib${soname}.so;
+rm -f $INST_DIR/lib/$shlibname;
+mkdir -p $INST_DIR/lib;
+mkdir -p $INST_DIR/include/imap;
+
+install -m 755 ./c-client/$shlibname $INST_DIR/lib/;
+ln -s $shlibname $INST_DIR/lib/lib${soname}.so;
+install -m 644 ./c-client/*.h $INST_DIR/include/imap/;
+install -m 644 ./c-client/linkage.c $INST_DIR/include/imap/;
+install -m 644 ./src/osdep/tops-20/shortsym.h $INST_DIR/include/imap/;
+
+ret=1;
+[ -f $INST_DIR/lib/lib${soname}.so ] && ret=0;
+_exit_and_cleanup "$ret" "${SRC_DIR}";

@@ -1,0 +1,37 @@
+#!/bin/bash
+# cenbia build script: nawawi@rutweb.com
+# mod_fcgid: http://httpd.apache.org/mod_fcgid/
+
+NAME="mod_fcgid";
+VER="2.3.7";
+SRC_FILE="${NAME}-${VER}.tar.gz";
+SRC_DIR="${NAME}-${VER}";
+DLURL="
+http://www.globalish.com/am/httpd/mod_fcgid
+http://apache.mirrors.lucidnetworks.net/httpd/mod_fcgid
+http://mirrors.gigenet.com/apache/httpd/mod_fcgid
+http://dl.cenbia.com/pkg
+";
+
+# load config
+source "../../build.d/source-config.sh" &>/dev/null;
+[ -z "${INST_DIR}" ] && { echo "${NAME}: Load config failed"; exit 1; };
+
+_build_setup "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
+
+export APXS="${INST_DIR}/bin/apxs";
+[ ! -x "${APXS}" ] && { echo "apxs not found"; exit 1; };
+
+./configure.apxs
+_exit_when_failed "Configure" "$?";
+
+make $SMPFLAGS;
+_exit_when_failed "Make" "$?";
+
+make install;
+ret="$?";
+if [ "$ret" = "0" ]; then
+    rm -rf $INST_DIR/etc/httpd/original;
+    sed -i -e 's|LoadModule fcgid_module.*||g' $INST_DIR/etc/httpd/httpd.conf;
+fi
+_exit_and_cleanup "$ret" "${SRC_DIR}";

@@ -1,0 +1,35 @@
+#!/bin/bash
+# cenbia build script: nawawi@rutweb.com
+# mod_fastcgi: https://github.com/ByteInternet/libapache-mod-fastcgi
+
+NAME="mod_fastcgi";
+VER="gitap2";
+SRC_FILE="${NAME}-${VER}.tar.gz";
+SRC_DIR="${NAME}-${VER}";
+DLURL="http://dl.cenbia.com/pkg";
+
+# load config
+source "../../build.d/source-config.sh" &>/dev/null;
+[ -z "${INST_DIR}" ] && { echo "${NAME}: Load config failed"; exit 1; };
+
+_build_setup "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
+
+cp -f Makefile.AP2 Makefile
+sed -i -e "s|top_dir.*=.*|top_dir = $INST_DIR/lib/httpd|g" ./Makefile;
+
+make $SMPFLAGS;
+_exit_when_failed "Make" "$?";
+
+make install;
+ret="$?";
+
+if [ "$ret" = "0" ]; then
+    if [ -f "$INST_DIR/etc/httpd/conf/httpd-mods.conf" ]; then
+        if ! grep -q mod_fastcgi $INST_DIR/etc/httpd/conf/httpd-mods.conf; then
+            echo "" >> $INST_DIR/etc/httpd/conf/httpd-mods.conf;
+            echo "LoadModule fastcgi_module lib/httpd/modules/mod_fastcgi.so" >> $INST_DIR/etc/httpd/conf/httpd-mods.conf;
+        fi
+    fi
+fi
+
+_exit_and_cleanup "$ret" "${SRC_DIR}";

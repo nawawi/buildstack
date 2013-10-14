@@ -1,0 +1,36 @@
+#!/bin/bash
+# cenbia build script: nawawi@rutweb.com
+# curl: http://curl.haxx.se/
+
+NAME="curl";
+VER="7.31.0";
+SRC_FILE="${NAME}-${VER}.tar.gz";
+SRC_DIR="${NAME}-${VER}";
+DLURL="http://curl.haxx.se/download http://dl.cenbia.com/pkg";
+
+# load config
+source "../../build.d/source-config.sh" &>/dev/null;
+[ -z "${INST_DIR}" ] && { echo "${NAME}: Load config failed"; exit 1; };
+# compile will failed if this set
+unset CFLAGS;
+
+_build_setup "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
+
+./configure --prefix=$INST_DIR \
+--disable-static \
+--enable-hidden-symbols \
+--enable-ipv6 \
+--disable-manual \
+--enable-threaded-resolver \
+--with-ca-bundle=$INST_DIR/pki/tls/certs/ca-bundle.crt \
+--without-libssh2 \
+--with-ssl=$INST_DIR
+_exit_when_failed "Configure" "$?";
+
+make $SMPFLAGS;
+_exit_when_failed "Make" "$?";
+
+make uninstall;
+
+make install;
+_exit_and_cleanup "$?" "${SRC_DIR}";

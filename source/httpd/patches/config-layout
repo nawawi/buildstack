@@ -1,0 +1,23 @@
+# Cenbia layout
+<Layout Cenbia>
+    prefix:          @INST_DIR
+    exec_prefix:     @INST_DIR
+    bindir:          @INST_DIR/bin
+    sbindir:         @INST_DIR/bin
+    libdir:          @INST_DIR/lib/httpd
+    libexecdir:      @INST_DIR/lib/httpd/modules
+    installbuilddir: @INST_DIR/lib/httpd/build
+    mandir:          @INST_DIR/share/man
+    sysconfdir:      @INST_DIR/etc/httpd
+    datadir:         @INST_DIR/share/httpd
+    iconsdir:        @INST_DIR/share/httpd/icons
+    htdocsdir:       @SITE_DEFAULT
+    manualdir:       @INST_DIR/share/httpd/manual
+    cgidir:          @SITE_DEFAULT/cgi-bin
+    errordir:        @INST_DIR/share/httpd/error
+    includedir:      @INST_DIR/include/httpd
+    localstatedir:   @ROOT_DIR/data
+    runtimedir:      @ROOT_DIR/data/run/httpd
+    logfiledir:      @ROOT_DIR/data/log/httpd
+    proxycachedir:   @ROOT_DIR/data/cache/httpd
+</Layout>

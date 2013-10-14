@@ -1,0 +1,419 @@
+#!/bin/bash
+# cenbia main build script: nawawi@rutweb.com
+
+# echo functions
+_echo() {
+    local msg="$1";
+    local status="$2";
+    if [ "$status" = "false" ]; then
+        echo "[ERROR] $msg";
+        return 1;
+    elif [ "$status" = "true" ]; then
+        echo "[SUCCESS] $msg";
+        return 0;
+    fi
+    echo "[BUILD] $msg";
+    return 0;
+}
+
+_exit() {
+    local msg="$1";
+    _echo "$msg";
+    exit 0;
+}
+
+_false() {
+    local msg="$1";
+    _echo "$msg" "false";
+    exit 1;
+}
+
+_true() {
+    local msg="$1";
+    _echo "$msg" "true";
+    exit 0;
+}
+
+
+# check if bash
+if [ "x${BASH_VERSION}" = "x" ]; then
+    _false "This software require bash version 3 and above";
+else
+    if [ -n "${BASH_VERSINFO[0]}" ] && [ ${BASH_VERSINFO[0]} -lt 3 ]; then
+        _false "This software require bash version 3 and above";
+    fi
+fi
+
+for x in gcc g++ cmake make nasm autoconf automake sed install libtool patch rm grep rsync wget; do
+    if ! type -p $x &>/dev/null; then
+        _false "This software require '${x}' command";
+    fi
+done
+
+# setting
+_WITHOUT_MAN="no";
+_WITHOUT_DOC="no";
+_WITHOUT_INFO="no";
+_WITHOUT_STATIC="no";
+_WITHOUT_DEV="no";
+_WITHOUT_STRIP="no";
+_WITHOUT_UTILS="no";
+
+# mandatory
+_UTILS_BIN="curl openssl iconv php php-fpm php-cgi httpd mysqld mysql checkport cenbia cenbia-first-setup";
+
+# path
+_BUILD_PATH="$(dirname $0)";
+if [ $_BUILD_PATH = "." ]; then
+    _BUILD_PATH="$(pwd)";
+fi
+
+if [ ! -f "$_BUILD_PATH/build.d/cenbia-version" ]; then
+    _false "Version file not found";
+fi
+_CENBIA_VERSION="$(cat $_BUILD_PATH/build.d/cenbia-version)";
+
+_CENBIA_BUILD_PATH=$_BUILD_PATH;
+_CENBIA_ROOT_PATH="/opt/cenbia";
+_CENBIA_INST_PATH="${_CENBIA_ROOT_PATH}/stack";
+_CENBIA_LIB_PATH="${_CENBIA_INST_PATH}/lib";
+_CENBIA_SHARE_PATH="${_CENBIA_INST_PATH}/share";
+_CENBIA_MAN_PATH="${_CENBIA_SHARE_PATH}/man";
+_CENBIA_DOC_PATH="${_CENBIA_SHARE_PATH}/doc";
+_CENBIA_ARCH="32";
+[ "$(uname -m | grep -c 64)" = "1" ] && _CENBIA_ARCH="64";
+export _CENBIA_ROOT_PATH _CENBIA_INST_PATH _CENBIA_LIB_PATH;
+export _CENBIA_SHARE_PATH _CENBIA_MAN_PATH;
+export _CENBIA_DOC_PATH;
+export _CENBIA_BUILD_PATH;
+export _CENBIA_ARCH;
+export _CENBIA_VERSION;
+export CC="gcc";
+export SMPFLAGS="-j2";
+
+
+_copydev() {
+    local src="$1";
+    _echo "Copying $src";
+    if [ -n "$src" -a "$src" != "/" -a -n "${_CENBIA_ROOT_PATH}" -a "${_CENBIA_ROOT_PATH}" != "/" ]; then
+        [ ! -d "${_CENBIA_ROOT_PATH}-devel" ] && mkdir -p ${_CENBIA_ROOT_PATH}-devel;
+        if [ ! -d "${_CENBIA_ROOT_PATH}-devel" ]; then
+            _false "Cannot create development files";
+        fi
+        cp -fau -P -p --parents $src ${_CENBIA_ROOT_PATH}-devel/;
+        if [ $? = 0 ]; then
+            rm -rf $src;
+        fi
+    fi
+}
+_copydev_done() {
+    if [ -d "${_CENBIA_ROOT_PATH}-devel" ] && [ -d "${_CENBIA_ROOT_PATH}-devel/opt/cenbia" ]; then
+        mv ${_CENBIA_ROOT_PATH}-devel/opt/cenbia ${_CENBIA_ROOT_PATH}-devel/;
+        rm -rf ${_CENBIA_ROOT_PATH}-devel/opt;
+        if cd ${_CENBIA_ROOT_PATH}-devel; then
+            fdv="cenbia-${_CENBIA_VERSION}-${_CENBIA_ARCH}bit-devel.tar.gz";
+            tar -zcf $fdv cenbia;
+            if [ $? = 0 ]; then
+                mv $fdv  $_BUILD_PATH;
+            fi
+        fi
+        cd $_BUILD_PATH;
+        rm -rf ${_CENBIA_ROOT_PATH}-devel;
+    fi
+}
+
+# set source file
+_BUILD_SOURCE="${_BUILD_PATH}/build.d/source.list";
+
+if [ ! -f $_BUILD_SOURCE ]; then
+    _false "${_BUILD_SOURCE} not found";
+fi
+
+_PACKAGE="$(grep -v ^# ${_BUILD_SOURCE})";
+
+# bin exclude, never remove
+_BIN_LIST="${_BUILD_PATH}/build.d/utils-bin.list";
+if [ -f $_BIN_LIST ]; then
+    _UTILS_BIN="${_UTILS_BIN} $(grep -v ^# ${_BIN_LIST})";
+fi
+
+trap "{ _exit 'Quit Abort'; exit 1; }" SIGINT SIGTERM SIGHUP SIGKILL SIGABRT;
+
+_DOSET() {
+    if [ -n "$1" -a "$1" = "dist" ]; then
+        _WITHOUT_MAN="yes";
+        _WITHOUT_DOC="yes";
+        _WITHOUT_INFO="yes";
+        _WITHOUT_STATIC="yes";
+        _WITHOUT_DEV="yes";
+        _WITHOUT_STRIP="no";
+        _WITHOUT_UTILS="yes";
+    else
+        _WITHOUT_MAN="no";
+        _WITHOUT_DOC="no";
+        _WITHOUT_INFO="no";
+        _WITHOUT_STATIC="no";
+        _WITHOUT_DEV="no";
+        _WITHOUT_STRIP="yes";
+        _WITHOUT_UTILS="no";
+    fi
+}
+
+_CLEAN() {
+    if [ -d "${_CENBIA_ROOT_PATH}" -a "${_CENBIA_ROOT_PATH}" != "/" ]; then
+        read -p "This operation will remove ${_CENBIA_ROOT_PATH}, are you want to proceed [Y/N]: " ans;
+        while [ "$ans" != "Y" -a "$ans" != "y" -a "$ans" != "N" -a "$ans" != "n" -a "$ans" != "C" -a "$ans" != "c" ]; do
+            echo "Please enter Y or N. C for cancel";
+            read -p "This operation will remove ${_CENBIA_ROOT_PATH} [Y/N]: " ans;
+        done
+        [ "$ans" = "C" -o "$ans" = "c" ] && _exit "Cancel";
+        if [ "$ans" = "Y" -o "$ans" = "y" -a -d "${_CENBIA_ROOT_PATH}" ]; then
+            rm -rfv ${_CENBIA_ROOT_PATH};
+        fi
+    fi
+}
+
+_COPYLIB() {
+    if [ -f "${_BUILD_PATH}/build.d/copylib.sh" ]; then
+        [ "x$1" = "x" ] && _echo "Copying library..";
+        $_BUILD_PATH/build.d/copylib.sh &>/dev/null;
+    fi
+}
+
+_DOBUILD() {
+    local f="$1";
+    [ -z "${f}" ] && return 1;
+    if [ -f "$_CENBIA_ROOT_PATH/.build/$f" ]; then
+        _echo "$f already build";
+        return 1;
+    fi
+
+    _echo $f;
+
+    _path="./source/$f";
+    if ! cd $_path &>/dev/null; then
+        _false "Failed to build $f";
+    fi
+    if [ ! -f "./$f.build" ]; then
+        _false "$f.build not found";
+    fi
+    ./$f.build;
+    if [ $? -ne 0 ]; then
+        _false "Failed to build $f";
+    else
+        touch $_CENBIA_ROOT_PATH/.build/$f;
+    fi
+    [ -d "./license" ] && cp -fa ./license $_CENBIA_ROOT_PATH/licenses/$f
+    cd $_BUILD_PATH;
+}
+
+_BUILD() {
+    if [ ! -d "${_CENBIA_ROOT_PATH}/.build" ]; then
+        mkdir -p $_CENBIA_ROOT_PATH/.build;
+    fi
+    if [ ! -d "${_CENBIA_ROOT_PATH}/licenses" ]; then
+        mkdir -p $_CENBIA_ROOT_PATH/licenses;
+    fi
+    for f in $_PACKAGE; do
+        _DOBUILD $f;
+    done
+
+    if [ -n "${_WITHOUT_DEV}" -a "${_WITHOUT_DEV}" != "yes" ]; then
+        _COPYLIB;
+    fi
+    _echo "All Done";
+}
+
+_FINISH() {
+    if [ -n "${_CENBIA_INST_PATH}" -a "${_CENBIA_INST_PATH}" != "/" -a "${_CENBIA_INST_PATH}" != "." ]; then
+        
+        if [ -n "${_WITHOUT_MAN}" -a "${_WITHOUT_MAN}" = "yes" ]; then
+            _copydev $_CENBIA_INST_PATH/share/man;
+            _copydev $_CENBIA_INST_PATH/share/httpd/manual;
+        fi
+        
+        if [ -n "${_WITHOUT_DOC}" -a "${_WITHOUT_DOC}" = "yes" ]; then
+            _copydev $_CENBIA_INST_PATH/share/doc;
+            _copydev $_CENBIA_INST_PATH/share/gtk-doc;
+        fi
+        
+
+        if [ -n "${_WITHOUT_INFO}" -a "${_WITHOUT_INFO}" = "yes" ]; then
+            _copydev $_CENBIA_INST_PATH/share/info;
+        fi
+        
+
+        if [ -n "${_WITHOUT_STATIC}" -a "${_WITHOUT_STATIC}" = "yes" ]; then
+            for f in $(find $_CENBIA_INST_PATH/lib/ -name "*.a*"); do
+                _copydev $f;
+            done
+        fi
+        
+
+        if [ -n "${_WITHOUT_DEV}" -a "${_WITHOUT_DEV}" = "yes" ]; then
+            for f in $(find $_CENBIA_INST_PATH/lib/ -name "*.a*"); do
+                _copydev $f;
+            done
+            for f in $(find $_CENBIA_INST_PATH/lib/ -name "*.la*"); do
+                _copydev $f;
+            done
+            for f in $(find $_CENBIA_INST_PATH/ -name "*-config"); do
+                _copydev $f;
+            done
+            for f in $(find $_CENBIA_INST_PATH/ -name "*.exp"); do
+                _copydev $f;
+            done
+            _copydev $_CENBIA_INST_PATH/share/aclocal;
+            _copydev $_CENBIA_INST_PATH/include;
+            _copydev $_CENBIA_INST_PATH/share/mysql-test;
+            _copydev $_CENBIA_INST_PATH/share/mysql-bench;
+            _copydev $_CENBIA_INST_PATH/lib/xml2Conf.sh;
+            _copydev $_CENBIA_INST_PATH/lib/xsltConf.sh;
+            _copydev $_CENBIA_INST_PATH/lib/pkgconfig;
+            _copydev $_CENBIA_INST_PATH/bin/pkg-config;
+            _copydev $_CENBIA_INST_PATH/man;
+
+            _copydev $_CENBIA_INST_PATH/pear;
+            _copydev $_CENBIA_INST_PATH/etc/php/pear.conf;
+            _copydev $_CENBIA_INST_PATH/lib/php/build;
+            _copydev $_CENBIA_INST_PATH/lib/httpd/build;
+            _copydev $_CENBIA_INST_PATH/lib/icu;
+            _copydev $_CENBIA_INST_PATH/lib/gettext;
+
+        fi
+       
+        if [ -n "${_WITHOUT_STRIP}" -a "${_WITHOUT_STRIP}" = "no" ]; then
+            for f in $(find $_CENBIA_INST_PATH/lib/ -name "*.so*"); do
+                [ ! -L $f -a ! -d $f ] && strip --strip-debug --strip-unneeded $f &>/dev/null;
+            done
+            for f in $_CENBIA_INST_PATH/bin/*; do
+                [ ! -L $f -a ! -d $f ] && strip --strip-debug --strip-unneeded $f &>/dev/null;
+            done
+        fi
+
+        if [ -n "${_WITHOUT_UTILS}" -a "${_WITHOUT_UTILS}" = "yes" ]; then
+            if [ -n "${_UTILS_BIN}" ]; then
+                mkdir $_CENBIA_INST_PATH/bin/.tmp
+                for x in ${_UTILS_BIN}; do
+                    [ -f $_CENBIA_INST_PATH/bin/$x ] && mv $_CENBIA_INST_PATH/bin/$x $_CENBIA_INST_PATH/bin/.tmp/
+                done
+            fi
+            for f in $_CENBIA_INST_PATH/bin/*; do
+                _copydev $f;
+            done
+            if [ -d $_CENBIA_INST_PATH/bin/.tmp ]; then
+                mv $_CENBIA_INST_PATH/bin/.tmp/* $_CENBIA_INST_PATH/bin/ &>/dev/null;
+                rm -rf $_CENBIA_INST_PATH/bin/.tmp
+            fi
+        fi
+    fi
+
+    if [ -f "${_BUILD_PATH}/build.d/cenbia-environment" ]; then
+        cp -f ${_BUILD_PATH}/build.d/cenbia-environment $_CENBIA_INST_PATH/etc/cenbia-environment;
+        sed -i -e "s|@INST_DIR|$_CENBIA_INST_PATH|g" $_CENBIA_INST_PATH/etc/cenbia-environment;
+        sed -i -e "s|@ROOT_DIR|$_CENBIA_ROOT_PATH|g" $_CENBIA_INST_PATH/etc/cenbia-environment;
+    fi
+    if [ -f "${_BUILD_PATH}/build.d/console.sh" ]; then
+        _cbin="${_CENBIA_ROOT_PATH}/cenbia";
+        cp -f ${_BUILD_PATH}/build.d/console.sh $_cbin;
+        sed -i -e "s|@ROOT_DIR|$_CENBIA_ROOT_PATH|g" $_cbin;
+        sed -i -e "s|@INST_DIR|$_CENBIA_INST_PATH|g" $_cbin;
+        chmod 755 $_cbin;
+    fi
+    if [ -f "${_BUILD_PATH}/build.d/cenbia-first-setup.sh" ]; then
+        _cbin="${_CENBIA_INST_PATH}/bin/cenbia-first-setup";
+        cp -f ${_BUILD_PATH}/build.d/cenbia-first-setup.sh $_cbin;
+        sed -i -e "s|@ROOT_DIR|$_CENBIA_ROOT_PATH|g" $_cbin;
+        sed -i -e "s|@INST_DIR|$_CENBIA_INST_PATH|g" $_cbin;
+        chmod 755 $_cbin;
+    fi
+
+    [ -d "${_CENBIA_INST_PATH}/etc/init.d" ] && rm -rf $_CENBIA_INST_PATH/etc/init.d;
+
+    for f in cenbia-version readme-bin.txt; do
+        if [ ! -f "${_BUILD_PATH}/build.d/${f}" ]; then
+            _false "$f not found!";
+        fi
+    done
+
+    cp $_BUILD_PATH/build.d/cenbia-version $_CENBIA_INST_PATH/version;
+    cp $_BUILD_PATH/build.d/readme-bin.txt $_CENBIA_ROOT_PATH/README;
+    sed -i -e "s|@INST_DIR|$_CENBIA_INST_PATH|g" $_CENBIA_ROOT_PATH/README;
+    sed -i -e "s|@ROOT_DIR|$_CENBIA_ROOT_PATH|g" $_CENBIA_ROOT_PATH/README;
+
+    if [ -n "${_WITHOUT_DEV}" -a "${_WITHOUT_DEV}" = "yes" ]; then
+        [ -d "${_CENBIA_INST_PATH}/lib64" ] && rm -rf $_CENBIA_INST_PATH/lib64;
+        [ -d "${_CENBIA_INST_PATH}/lib32" ] && rm -rf $_CENBIA_INST_PATH/lib32;
+        _COPYLIB q;
+    fi
+    _copydev_done;
+}
+
+_HELP() {
+    echo "Usage: $0 --clean | --rebuild | --dist | --dev | --help | [source name..]";
+    exit 2;
+}
+
+_MAIN() {
+    local _ok=0;
+    for arg do
+        case "${arg}" in
+            "--dist" )
+                _DOSET "dist";
+                _BUILD;
+                rm -rf $_CENBIA_ROOT_PATH/.build;
+                _ok=1;
+            ;;
+            "--dev" )
+                _DOSET "dev";
+                _CLEAN;
+                _BUILD;
+                _ok=1;
+            ;;
+            "--clean" )
+                _CLEAN;
+                _ok=2;
+            ;;
+            "--clean-pkg" )
+                for f in $(find ./source/ -name "*.gz") $(find ./source/ -name "*.bz2") $(find ./source/ -name "*.tgz"); do
+                    rm -vi $f;
+                done
+                exit 0;
+            ;;
+            "--rebuild" )
+                if [ -d "${_CENBIA_ROOT_PATH}/.build" ]; then
+                    rm -rf $_CENBIA_ROOT_PATH/.build;
+                fi
+                _ok=2;
+            ;;
+            "--help"|"-h" )
+                _HELP;
+            ;;
+            * )
+            if [ -n "${arg}" -a -d "${_BUILD_PATH}/source/${arg}" ]; then
+                if [ -n "${_CENBIA_ROOT_PATH}" -a ! -d "${_CENBIA_ROOT_PATH}" -a ! -d "${_CENBIA_INST_PATH}/include" ]; then
+                    echo "Development directory not setup yet, run '$0 --dev' first";
+                    exit 1;
+                fi
+                _DOSET "dev";
+                _DOBUILD $arg;
+                _ok=1;
+            fi
+        esac
+    done
+    if [ "${_ok}" != "1" ]; then
+        _DOSET "dev";
+        _CLEAN;
+        _BUILD;
+        _ok=1;
+    fi
+
+    if [ "${_ok}" = "1" ]; then
+        _FINISH;
+        exit 0;
+    fi
+    _HELP;
+}
+
+_MAIN $@;
+exit 0;

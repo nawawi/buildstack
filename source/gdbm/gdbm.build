@@ -1,0 +1,26 @@
+#!/bin/bash
+# cenbia build script: nawawi@rutweb.com
+# gdbm: http://ftp.gnu.org/gnu/gdbm/
+
+NAME="gdbm";
+VER="1.10";
+SRC_FILE="${NAME}-${VER}.tar.gz";
+SRC_DIR="${NAME}-${VER}";
+DLURL="http://ftp.gnu.org/gnu/gdbm http://dl.cenbia.com/pkg";
+
+# load config
+source "../../build.d/source-config.sh" &>/dev/null;
+[ -z "${INST_DIR}" ] && { echo "${NAME}: Load config failed"; exit 1; };
+
+_build_setup "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
+_apply_patches;
+
+./configure --prefix=$INST_DIR \
+--disable-static
+_exit_when_failed "Configure" "$?";
+
+make $SMPFLAGS;
+_exit_when_failed "Make" "$?";
+
+make install;
+_exit_and_cleanup "$?" "${SRC_DIR}";

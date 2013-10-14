@@ -1,0 +1,27 @@
+#!/bin/bash
+# cenbia build script: nawawi@rutweb.com
+# libevent: http://www.libevent.org/
+
+NAME="libevent";
+VER="2.0.21";
+SRC_FILE="${NAME}-${VER}-stable.tar.gz";
+SRC_DIR="${NAME}-${VER}-stable";
+DLURL="https://github.com/downloads/libevent/libevent http://dl.cenbia.com/pkg";
+
+# load config
+source "../../build.d/source-config.sh" &>/dev/null;
+[ -z "${INST_DIR}" ] && { echo "${NAME}: Load config failed"; exit 1; };
+
+_build_setup "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
+_apply_patches;
+
+./configure \
+--prefix=$INST_DIR \
+--disable-dependency-tracking --disable-static
+_exit_when_failed "Configure" "$?";
+
+make $SMPFLAGS all;
+_exit_when_failed "Make" "$?";
+
+make install;
+_exit_and_cleanup "$?" "${SRC_DIR}";

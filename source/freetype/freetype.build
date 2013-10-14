@@ -1,0 +1,25 @@
+#!/bin/bash
+# cenbia build script: nawawi@rutweb.com
+# freetype: http://download.savannah.gnu.org/releases/freetype/
+
+NAME="freetype";
+VER="2.5.0";
+SRC_FILE="${NAME}-${VER}.tar.gz";
+SRC_DIR="${NAME}-${VER}";
+DLURL="http://download.savannah.gnu.org/releases/freetype http://dl.cenbia.com/pkg";
+
+# load config
+source "../../build.d/source-config.sh" &>/dev/null;
+[ -z "${INST_DIR}" ] && { echo "${NAME}: Load config failed"; exit 1; };
+
+_build_setup "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
+
+./configure --prefix=$INST_DIR \
+--disable-static
+_exit_when_failed "Configure" "$?";
+
+make $SMPFLAGS;
+_exit_when_failed "Make" "$?";
+
+make install;
+_exit_and_cleanup "$?" "${SRC_DIR}";

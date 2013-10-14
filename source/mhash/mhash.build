@@ -1,0 +1,29 @@
+#!/bin/bash
+# cenbia build script: nawawi@rutweb.com
+# mhash: http://sourceforge.net/projects/mhash
+# As of 2007-08-18 11:03, this project is no longer under active development
+
+NAME="mhash";
+VER="0.9.9.9";
+SRC_FILE="${NAME}-${VER}.tar.bz2";
+SRC_DIR="${NAME}-${VER}";
+DLURL="
+http://sourceforge.net/projects/mhash/files/mhash/$VER/$SRC_FILE/download
+http://dl.cenbia.com/pkg";
+
+# load config
+source "../../build.d/source-config.sh" &>/dev/null;
+[ -z "${INST_DIR}" ] && { echo "${NAME}: Load config failed"; exit 1; };
+
+_build_setup "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
+_apply_patches;
+
+./configure --prefix=$INST_DIR \
+--enable-shared --disable-static
+_exit_when_failed "Configure" "$?";
+
+make $SMPFLAGS
+_exit_when_failed "Make" "$?";
+
+make install
+_exit_and_cleanup "$?" "${SRC_DIR}";

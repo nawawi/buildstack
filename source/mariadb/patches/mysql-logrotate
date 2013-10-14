@@ -1,0 +1,16 @@
+@LOGFILE {
+    create 640 @USER @USER
+    notifempty
+	daily
+    rotate 3
+    missingok
+    compress
+    postrotate
+	# just if mysqld is really running
+	if test -x /opt/cenbia/bin/mysqladmin && \
+	   @INST_DIR/bin/mysqladmin ping &>/dev/null
+	then
+	   @INST_DIR/bin/mysqladmin flush-logs
+	fi
+    endscript
+}

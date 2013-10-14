@@ -1,0 +1,43 @@
+#!/bin/bash
+# cenbia build script: nawawi@rutweb.com
+# icu: http://www.icu-project.org/
+
+NAME="icu4c";
+VER="49.1.1";
+SRC_FILE="${NAME}-${VER}.tar.gz";
+SRC_DIR="icu";
+DLURL="http://download.icu-project.org/files/icu4c/49.1.1/icu4c-49_1_1-src.tgz http://dl.cenbia.com/pkg";
+
+# load config
+source "../../build.d/source-config.sh" &>/dev/null;
+[ -z "${INST_DIR}" ] && { echo "${NAME}: Load config failed"; exit 1; };
+
+_build_setup "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
+
+export CC=gcc;
+export CFLAGS="${CFLAGS} -fno-strict-aliasing";
+export CXXFLAGS="${CXXFLAGS} -fno-strict-aliasing";
+
+cd source
+autoconf
+./configure --prefix=$INST_DIR \
+--with-data-packaging=library --disable-samples
+
+sed -i 's|-nodefaultlibs -nostdlib||' config/mh-linux
+sed -i 's|^LIBS =.*|LIBS = -L../lib -licuuc -lpthread -lm|' i18n/Makefile
+sed -i 's|^LIBS =.*|LIBS = -nostdlib -L../lib -licuuc -licui18n -lc -lgcc|' io/Makefile
+sed -i 's|^LIBS =.*|LIBS = -nostdlib -L../lib -licuuc -lc|' layout/Makefile
+sed -i 's|^LIBS =.*|LIBS = -nostdlib -L../lib -licuuc -licule -lc|' layoutex/Makefile
+sed -i 's|^LIBS =.*|LIBS = -nostdlib -L../../lib -licutu -licuuc -lc|' tools/ctestfw/Makefile
+sed -i 's|^LIBS =.*|LIBS = -nostdlib -L../../lib -licui18n -licuuc -lpthread -lc|' tools/toolutil/Makefile
+sed -i 's| \$(docfilesdir)/installdox||' Makefile
+sed -i '/^\s\+\$(INSTALL_DATA) \$(docsrchfiles) \$(DESTDIR)\$(docdir)\/\$(docsubsrchdir)\s*$/d' Makefile
+
+_exit_when_failed "Configure" "$?";
+
+make $SMPFLAGS;
+_exit_when_failed "Make" "$?";
+
+make install;
+cd ../
+_exit_and_cleanup "$?" "${SRC_DIR}";

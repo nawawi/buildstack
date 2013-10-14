@@ -1,0 +1,28 @@
+#!/bin/bash
+# cenbia build script: nawawi@rutweb.com
+# libxslt: ftp://xmlsoft.org/XSLT/
+
+NAME="libxslt";
+VER="1.1.28";
+SRC_FILE="${NAME}-${VER}.tar.gz";
+SRC_DIR="${NAME}-${VER}";
+DLURL="ftp://xmlsoft.org/XSLT http://dl.cenbia.com/pkg";
+
+# load config
+source "../../build.d/source-config.sh" &>/dev/null;
+[ -z "${INST_DIR}" ] && { echo "${NAME}: Load config failed"; exit 1; };
+
+_build_setup "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
+
+./configure --prefix=$INST_DIR \
+--with-libxml-prefix=$INST_DIR \
+--with-libxml-include-prefix=$INST_DIR/include \
+--with-libxml-libs-prefix=$INST_DIR/lib \
+--disable-static
+_exit_when_failed "Configure" "$?";
+
+make $SMPFLAGS;
+_exit_when_failed "Make" "$?";
+
+make install;
+_exit_and_cleanup "$?" "${SRC_DIR}";

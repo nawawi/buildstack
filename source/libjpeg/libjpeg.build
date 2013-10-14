@@ -1,0 +1,30 @@
+#!/bin/bash
+# cenbia build script: nawawi@rutweb.com
+# libjpeg-turbo: http://sourceforge.net/projects/libjpeg-turbo
+
+NAME="libjpeg-turbo";
+VER="1.3.0";
+SRC_FILE="${NAME}-${VER}.tar.gz";
+SRC_DIR="${NAME}-${VER}";
+DLURL="
+http://sourceforge.net/projects/libjpeg-turbo/files/$VER/$SRC_FILE/download
+http://dl.cenbia.com/pkg";
+
+# load config
+source "../../build.d/source-config.sh" &>/dev/null;
+[ -z "${INST_DIR}" ] && { echo "${NAME}: Load config failed"; exit 1; };
+
+_build_setup "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
+
+./configure \
+--prefix=$INST_DIR \
+--mandir=$INST_DIR/share/man \
+--infodir=$INST_DIR/share/info \
+--disable-static
+_exit_when_failed "Configure" "$?";
+
+make $SMPFLAGS;
+_exit_when_failed "Make" "$?";
+
+make install
+_exit_and_cleanup "$?" "${SRC_DIR}";

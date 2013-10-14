@@ -1,0 +1,34 @@
+# source file place in ./source directory
+# order by priority
+pkgconfig
+jemalloc
+gdbm
+zlib
+bzip2
+libjpeg
+libpng
+freetype
+openssl
+gd
+libiconv
+gettext
+libxml2
+libxslt
+ncurses
+pcre
+curl
+libaio
+libevent
+libdb
+sqlite
+mariadb
+httpd
+mod_fcgid
+mod_fastcgi
+libmcrypt
+mhash
+icu
+libc-client
+php
+phpmyadmin
+cenbia-utils

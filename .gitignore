@@ -16,3 +16,12 @@
 *.exe
 *.out
 *.app
+
+# tarball
+*.zip
+*.tar.*
+*.gz
+*.bz2
+*.lzma
+*.tgz
+*.tbz2

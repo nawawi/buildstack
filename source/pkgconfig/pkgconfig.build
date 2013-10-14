@@ -1,0 +1,33 @@
+#!/bin/bash
+# cenbia build script: nawawi@rutweb.com
+# pkg-config: http://pkgconfig.freedesktop.org/
+
+NAME="pkg-config";
+VER="0.28";
+SRC_FILE="${NAME}-${VER}.tar.gz";
+SRC_DIR="${NAME}-${VER}";
+DLURL="http://pkgconfig.freedesktop.org/releases http://dl.cenbia.com/pkg";
+
+# load config
+source "../../build.d/source-config.sh" &>/dev/null;
+[ -z "${INST_DIR}" ] && { echo "${NAME}: Load config failed"; exit 1; };
+
+_build_setup "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
+
+[ -f "${INST_DIR}/include/iconv.h" ] && mv $INST_DIR/include/iconv.h $INST_DIR/include/iconv_h;
+./configure --prefix=$INST_DIR \
+--disable-shared \
+--with-internal-glib \
+--with-pc-path=$INST_DIR/lib/pkgconfig
+_exit_when_failed "Configure" "$?";
+
+[ -f "${INST_DIR}/include/iconv_h" ] && mv $INST_DIR/include/iconv.h $INST_DIR/include/iconv.h;
+
+make $SMPFLAGS;
+_exit_when_failed "Make" "$?";
+
+# clean
+rm -f $INST_DIR/bin/*pkg-config;
+
+make install;
+_exit_and_cleanup "$?" "${SRC_DIR}";
