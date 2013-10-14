@@ -201,9 +201,13 @@ _DOBUILD() {
     if [ $? -ne 0 ]; then
         _false "Failed to build $f";
     else
+        [ ! -d "${_CENBIA_ROOT_PATH}/.build" ] && mkdir -p $_CENBIA_ROOT_PATH/.build;
         touch $_CENBIA_ROOT_PATH/.build/$f;
     fi
-    [ -d "./license" ] && cp -fa ./license $_CENBIA_ROOT_PATH/licenses/$f
+    if [ -d "./license" ]; then
+        [ ! -d "${_CENBIA_ROOT_PATH}/licenses" ] && mkdir -p $_CENBIA_ROOT_PATH/licenses;
+        cp -fa ./license $_CENBIA_ROOT_PATH/licenses/$f;
+    fi
     cd $_BUILD_PATH;
 }
 
@@ -309,6 +313,7 @@ _FINISH() {
     fi
 
     if [ -f "${_BUILD_PATH}/build.d/cenbia-environment" ]; then
+        [ ! -d "${_CENBIA_INST_PATH}/etc" ] && mkdir -p  $_CENBIA_INST_PATH/etc;
         cp -f ${_BUILD_PATH}/build.d/cenbia-environment $_CENBIA_INST_PATH/etc/cenbia-environment;
         sed -i -e "s|@INST_DIR|$_CENBIA_INST_PATH|g" $_CENBIA_INST_PATH/etc/cenbia-environment;
         sed -i -e "s|@ROOT_DIR|$_CENBIA_ROOT_PATH|g" $_CENBIA_INST_PATH/etc/cenbia-environment;

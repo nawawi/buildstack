@@ -3,7 +3,7 @@
 # curl: http://curl.haxx.se/
 
 NAME="curl";
-VER="7.31.0";
+VER="7.32.0";
 SRC_FILE="${NAME}-${VER}.tar.gz";
 SRC_DIR="${NAME}-${VER}";
 DLURL="http://curl.haxx.se/download http://dl.cenbia.com/pkg";

@@ -3,7 +3,7 @@
 # mariadb: http://mariadb.org
 
 NAME="mariadb";
-VER="5.5.31";
+VER="5.5.33a";
 SRC_FILE="${NAME}-${VER}.tar.gz";
 SRC_DIR="${NAME}-${VER}";
 DLURL="
@@ -47,6 +47,7 @@ cmake . -DBUILD_CONFIG=mysql_release \
 -DINSTALL_SQLBENCHDIR="share/mysql-bench" \
 -DINSTALL_SUPPORTFILESDIR="share/mysql/support" \
 -DINSTALL_SYSCONFDIR="${_CONFIG_DIR}" \
+-DINSTALL_SYSCONF2DIR="${_CONFIG_DIR}" \
 -DMYSQL_DATADIR="${ROOT_DIR}/data/mariadb" \
 -DMYSQL_UNIX_ADDR="${ROOT_DIR}/data/mariadb/mysqld.sock" \
 -DENABLED_LOCAL_INFILE=ON \

@@ -3,7 +3,7 @@
 # phpMyAdmin: http://www.phpmyadmin.net
 
 NAME="phpMyAdmin";
-VER="4.0.4";
+VER="4.0.8";
 SRC_FILE="${NAME}-${VER}-english.tar.gz";
 SRC_DIR="${NAME}-${VER}-english";
 DLURL="

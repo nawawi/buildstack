@@ -46,7 +46,7 @@ _getfile() {
         return 1;
     fi
     if [ ! -f "${file}" ]; then
-        wget -c --no-check-certificate $url -O ${file}.part;
+        wget -S -c --no-check-certificate $url -O ${file}.part;
         ret="$?";
         [ "$ret" = "0" ] && mv ${file}.part $file;
         return $ret;
@@ -57,52 +57,38 @@ _getfile() {
 _extract_file() {
     local file="$1";
     local dlurl="$2";
+    local fdl="../../tarball/${file}";
+    [ ! -d "./../tarball" ] && mkdir -pv ../../tarball;
     if [ -n "${file}" ]; then
-        if [ -f "${file}" ]; then
-            local ext="${file##*.}";
+        if [ -f "${fdl}" ]; then
+            local ext="${fdl##*.}";
             local opt="";
             [ "${ext}" = "gz" -o "${ext}" = "tgz" ] && opt="-zxf";
             [ "${ext}" = "bz2" -o "${ext}" = "tbz2" ] && opt="-jxf";
-            [ -z "${ext}" ] && { echo "File extension not supported"; exit 1; };
-            tar $opt $file;
+            [ -z "${ext}" -o -z "${opt}" ] && { echo "File extension not supported"; exit 1; };
+            tar $opt $fdl;
             if [ "$?" -ne "0" ]; then
-                echo "Failed to extract file";
-                if [ "${ext}" = "gz" -o "${ext}" = "tgz" ]; then
-                    echo "Trying another method..";
-                    zcat $file | tar -xz
-                    if [ "$?" -ne "0" ]; then
-                        echo "Failed to extract file";
-                        exit 1;
-                    fi
-                elif [ "${ext}" = "bz2" -o "${ext}" = "tbz2" ]; then
-                    echo "Trying another method..";
-                    bzcat $file | tar -xz
-                    if [ "$?" -ne "0" ]; then
-                        echo "Failed to extract file";
-                        exit 1;
-                    fi
-                else
-                    exit 1;
-                fi
+                echo "Failed to extract file: ${file}";
+                exit 1;
             fi
             return 0;
         elif [ -n "${dlurl}" ]; then
             echo "${file} not found, downloading..";
             for url in $dlurl; do
                 if strstr "$url" "$file"; then
-                    _getfile $url $file;
+                    _getfile $url $fdl;
                 elif strstr "$url" ".gz"; then
-                    _getfile $url $file;
+                    _getfile $url $fdl;
                 elif strstr "$url" ".bz2"; then
-                    _getfile $url $file;
+                    _getfile $url $fdl;
                 elif strstr "$url" ".tgz"; then
-                    _getfile $url $file;
+                    _getfile $url $fdl;
                 else
-                    _getfile $url/$file $file;
+                    _getfile $url/$file $fdl;
                 fi
                 [ "$?" = "0" ] && break;
             done
-            _extract_file "$file";
+            _extract_file "${file}";
             return 0;
         fi
     fi
