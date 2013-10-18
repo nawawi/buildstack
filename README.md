@@ -6,9 +6,13 @@ as one component for software called Cenbia WebStack.
 
 Requirement
 -----------
-1. Internet Connection. By default BuildStack will download application package if not exist.
+1. Bash version 3 or higher.
+1. Internet Connection. By default BuildStack will download source package if not exist.
+
 2. Superuser "root" access.
-3. development/compiling tools such as gcc, g++, and perl. 
+
+3. development/compiling tools such as gcc, g++, and perl.
+
    Complete CentOS package or similar: 
    gcc gcc-c++ cmake make autoconf libtool bison libgcc unixODBC-devel readline-devel gnutls-devel 
    krb5-devel freetds-devel pam-devel bash sed coreutils rsync patch nasm. 
