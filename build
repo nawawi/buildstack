@@ -74,7 +74,7 @@ fi
 _CENBIA_VERSION="$(cat $_BUILD_PATH/build.d/cenbia-version)";
 
 _CENBIA_BUILD_PATH=$_BUILD_PATH;
-_CENBIA_ROOT_PATH="/opt/cenbia";
+[ "x${_CENBIA_ROOT_PATH}" = "x" ] && _CENBIA_ROOT_PATH="/opt/cenbia";
 _CENBIA_INST_PATH="${_CENBIA_ROOT_PATH}/stack";
 _CENBIA_LIB_PATH="${_CENBIA_INST_PATH}/lib";
 _CENBIA_SHARE_PATH="${_CENBIA_INST_PATH}/share";
@@ -161,7 +161,7 @@ _DOSET() {
 
 _CLEAN() {
     if [ -d "${_CENBIA_ROOT_PATH}" -a "${_CENBIA_ROOT_PATH}" != "/" ]; then
-        read -p "This operation will remove ${_CENBIA_ROOT_PATH}, are you want to proceed [Y/N]: " ans;
+        read -p "This operation will remove ${_CENBIA_ROOT_PATH}, are you want to proceed [Y/N/C]: " ans;
         while [ "$ans" != "Y" -a "$ans" != "y" -a "$ans" != "N" -a "$ans" != "n" -a "$ans" != "C" -a "$ans" != "c" ]; do
             echo "Please enter Y or N. C for cancel";
             read -p "This operation will remove ${_CENBIA_ROOT_PATH} [Y/N]: " ans;
@@ -325,6 +325,19 @@ _FINISH() {
         sed -i -e "s|@INST_DIR|$_CENBIA_INST_PATH|g" $_cbin;
         chmod 755 $_cbin;
     fi
+    if [ -f "${_BUILD_PATH}/build.d/cenbia-start" ]; then
+        _cbin="${_CENBIA_INST_PATH}/bin/cenbia-start";
+        cp -f ${_BUILD_PATH}/build.d/cenbia-start $_cbin;
+        sed -i -e "s|@ROOT_DIR|$_CENBIA_ROOT_PATH|g" $_cbin;
+        sed -i -e "s|@INST_DIR|$_CENBIA_INST_PATH|g" $_cbin;
+        chmod 755 $_cbin;
+        cwd=$(pwd);
+        if cd $_CENBIA_INST_PATH/bin; then
+            ln -sf cenbia-start cenbia-stop;
+            ln -sf cenbia-start cenbia-restart;
+            cd $cwd;
+        fi
+    fi
     if [ -f "${_BUILD_PATH}/build.d/cenbia-first-setup.sh" ]; then
         _cbin="${_CENBIA_INST_PATH}/bin/cenbia-first-setup";
         cp -f ${_BUILD_PATH}/build.d/cenbia-first-setup.sh $_cbin;
@@ -355,43 +368,130 @@ _FINISH() {
 }
 
 _HELP() {
-    echo "Usage: $0 --clean | --rebuild | --dist | --dev | --help | [source name..]";
-    exit 2;
+cat << _END_
+
+Usage: $0 [option..] | [source]
+
+$0 --clean                          - will clean installation directory
+$0 --rebuild                        - rebuild all source
+$0 --dev                            - (default) build and install with development file
+$0 --dist                           - build and install without development file
+$0 --pkg-clean                      - remove all downloaded source package
+$0 --pkg-info                       - show source information
+$0 <option above> <source name>..   - build one or more source by supply source name
+
+Example
+-------
+1) Compile everything
+    $0 
+
+2) If everything OK, you want to distribute it
+    $0 --dist
+
+    development file will compress as cenbia-<version>-<arch>-devel.tar.gz
+    eg; cenbia-beta1-64bit-devel.tar.gz
+
+3) Something went wrong, compiling error.
+    $0 --rebuild <source name>
+    or
+    cd ./source/<source name> and enter ./<source name>.build to debug.
+    eg; 
+        cd ./bzip2 
+        ./bzip2.build
+
+
+Environment
+-----------
+_CENBIA_ROOT_PATH   - root installation directory
+                      by default install to $_CENBIA_ROOT_PATH
+
+If you want to change it use command below:
+
+\$ export _CENBIA_ROOT_PATH=<another path>
+\$ $0 
+
+_END_
+
+exit 2;
 }
 
+_PKG_INFO() {
+    if [ -d "${_BUILD_PATH}/source" ]; then
+        for d in $_BUILD_PATH/source/*/*.build; do
+            nm="$(basename $d .build)";
+            ver="$(grep ^VER= $d |sed -e 's|VER=||g' -e 's|"||g' -e 's|;||g')";
+            echo "$nm : $ver";
+            echo "==============";
+            grep ^NAME= $d;
+            grep ^VER= $d;
+            grep ^DLURL= $d;
+            grep ^DLURL\+= $d;
+            grep ^USER= $d;
+            grep ^GROUP= $d;
+            grep _NAME= $d;
+            grep _VER= $d;
+            grep _DLURL= $d;
+            grep _DLURL\+= $d;
+            grep _USER= $d;
+            grep _GROUP= $d;
+            echo "";
+        done
+    fi
+    exit 0;
+}
+
+_PKG_CLEAN() {
+    for f in $(find ./source/ -name "*.gz") $(find ./source/ -name "*.bz2") $(find ./source/ -name "*.tgz") $(find ./source/ -name "*.tbz2"); do
+        rm -fv $f;
+    done
+    rm -fv ./tarball/*.gz;
+    rm -fv ./tarball/*.tgz;
+    rm -fv ./tarball/*.bz2;
+    rm -fv ./tarball/*.tbz2;
+    exit 0;
+}
+
+_HELLO() {
+cat << _END_
+
+Cenbia BuildStack $(date)
+Type '$0 -h' for options
+
+_END_
+}
 _MAIN() {
     local _ok=0;
     for arg do
         case "${arg}" in
-            "--dist" )
+            "--dist" | "-dist" | "-r" )
                 _DOSET "dist";
                 _BUILD;
                 rm -rf $_CENBIA_ROOT_PATH/.build;
                 _ok=1;
             ;;
-            "--dev" )
+            "--dev" | "-dev" | "-d" )
                 _DOSET "dev";
                 _CLEAN;
                 _BUILD;
                 _ok=1;
             ;;
-            "--clean" )
+            "--clean" | "-clean" | "-c" )
                 _CLEAN;
                 _ok=2;
             ;;
-            "--clean-pkg" )
-                for f in $(find ./source/ -name "*.gz") $(find ./source/ -name "*.bz2") $(find ./source/ -name "*.tgz"); do
-                    rm -vi $f;
-                done
-                exit 0;
-            ;;
-            "--rebuild" )
+            "--rebuild" | "-rebuild" | "-R" )
                 if [ -d "${_CENBIA_ROOT_PATH}/.build" ]; then
                     rm -rf $_CENBIA_ROOT_PATH/.build;
                 fi
                 _ok=2;
             ;;
-            "--help"|"-h" )
+            "--pkg-clean" | "-pkg-clean" | "-pc" )
+                _PKG_CLEAN;
+            ;;
+            "--pkg-info" | "-pkg-info" | "-pi" )
+                _PKG_INFO;
+            ;;
+            "--help" | "-help" | "-h" )
                 _HELP;
             ;;
             * )
@@ -403,10 +503,12 @@ _MAIN() {
                 _DOSET "dev";
                 _DOBUILD $arg;
                 _ok=1;
+
             fi
         esac
     done
     if [ "${_ok}" != "1" ]; then
+        _HELLO;
         _DOSET "dev";
         _CLEAN;
         _BUILD;

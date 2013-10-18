@@ -7,16 +7,14 @@ NAME="mhash";
 VER="0.9.9.9";
 SRC_FILE="${NAME}-${VER}.tar.bz2";
 SRC_DIR="${NAME}-${VER}";
-DLURL="
-http://sourceforge.net/projects/mhash/files/mhash/$VER/$SRC_FILE/download
-http://dl.cenbia.com/pkg";
+DLURL="http://sourceforge.net/projects/mhash/files/mhash/$VER/$SRC_FILE/download ";
+DLURL+="http://dl.cenbia.com/pkg";
 
 # load config
 source "../../build.d/source-config.sh" &>/dev/null;
 [ -z "${INST_DIR}" ] && { echo "${NAME}: Load config failed"; exit 1; };
 
-_build_setup "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
-_apply_patches;
+_build_setup_and_patch "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
 
 ./configure --prefix=$INST_DIR \
 --enable-shared --disable-static

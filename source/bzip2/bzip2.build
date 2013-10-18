@@ -6,15 +6,14 @@ NAME="bzip2";
 VER="1.0.6";
 SRC_FILE="${NAME}-${VER}.tar.gz";
 SRC_DIR="${NAME}-${VER}";
-DLURL="http://www.bzip.org/1.0.6 http://dl.cenbia.com/pkg";
+DLURL="http://www.bzip.org/${VER} http://dl.cenbia.com/pkg";
 
 # load config
 source "../../build.d/source-config.sh" &>/dev/null;
 [ -z "${INST_DIR}" ] && { echo "${NAME}: Load config failed"; exit 1; };
 
 _require "rsync";
-_build_setup "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
-_apply_patches;
+_build_setup_and_patch "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
 
 make $SMPFLAGS -f Makefile-libbz2_so CFLAGS="-D_SRC_FILE_OFFSET_BITS=64 -fpic -fPIC ${CFLAGS}" all
 _exit_when_failed "Make" "$?";

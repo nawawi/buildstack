@@ -4,10 +4,18 @@
 # This file contains functions to be used by all
 # shell scripts in the source directory.
 
-ROOT_DIR="/opt/cenbia";
-INST_DIR="${ROOT_DIR}/stack";
-[ -n "${_CENBIA_ROOT_PATH}" ] && ROOT_DIR="${_CENBIA_ROOT_PATH}";
-[ -n "${_CENBIA_INST_PATH}" ] && INST_DIR="${_CENBIA_INST_PATH}";
+if [ -n "${_CENBIA_ROOT_PATH}" ]; then
+    ROOT_DIR="${_CENBIA_ROOT_PATH}";
+else
+    ROOT_DIR="/opt/cenbia";
+fi
+if [ -n "${_CENBIA_INST_PATH}" ]; then
+    INST_DIR="${_CENBIA_INST_PATH}";
+else
+    INST_DIR="${ROOT_DIR}/stack";
+fi
+DOWNLOAD_DIR="../../tarball";
+export DOWNLOAD_DIR;
 export PATH="${INST_DIR}/bin:${PATH}";
 export LD_LIBRARY_PATH=${INST_DIR}/lib:$LD_LIBRARY_PATH;
 export CFLAGS="-I${INST_DIR}/include";
@@ -22,15 +30,18 @@ if [ -z "${_CENBIA_ARCH}" ]; then
     fi
     export _CENBIA_ARCH;
 fi
+
 # rpath
 export CENBIA_RPATH="$INST_DIR/lib:$INST_DIR/lib${_CENBIA_ARCH}";
 export LDFLAGS="${LDFLAGS} -Wl,-rpath,${CENBIA_RPATH}";
 
+# C strstr
 strstr() {
   [ "${1#*$2*}" = "$1" ] && return 1
   return 0
 }
 
+# remove source folder
 _clean_src() {
     local dir="$1";
     if [ -n "${dir}" -a "${dir}" != "/" -a "${dir}" != "." -a -d "${dir}" ]; then
@@ -38,6 +49,7 @@ _clean_src() {
     fi
 }
 
+# download file.
 _getfile() {
     local url="$1";
     local file="$2";
@@ -54,11 +66,12 @@ _getfile() {
     return 1;
 }
 
+# extract source file. download if not exist.
 _extract_file() {
     local file="$1";
     local dlurl="$2";
-    local fdl="../../tarball/${file}";
-    [ ! -d "./../tarball" ] && mkdir -pv ../../tarball;
+    local fdl="${DOWNLOAD_DIR}/${file}";
+    [ ! -d "${DOWNLOAD_DIR}" ] && mkdir -pv $DOWNLOAD_DIR;
     if [ -n "${file}" ]; then
         if [ -f "${fdl}" ]; then
             local ext="${fdl##*.}";
@@ -96,6 +109,7 @@ _extract_file() {
     exit 1;   
 }
 
+# change directory to source directory
 _change_dir() {
     local dir="$1";
     if [ -z "${dir}" -o "${dir}" = "/" -o "${dir}" = "." -o ! -d "${dir}" ]; then
@@ -109,6 +123,7 @@ _change_dir() {
     fi
 }
 
+# check status if not 0 and then exit;
 _exit_when_failed() {
     local task="$1";
     local status="$2";
@@ -118,6 +133,7 @@ _exit_when_failed() {
     fi
 }
 
+# exit and remove source directory
 _exit_and_cleanup() {
     local status="$1";
     local dir="$2";
@@ -132,6 +148,7 @@ _exit_and_cleanup() {
     exit $status;
 }
 
+# prepare source directory
 _build_setup() {
     echo "Setup.."
     local file="$1";
@@ -146,16 +163,27 @@ _build_setup() {
     _change_dir "${dir}";
 }
 
+# run _build_setup and _apply_patches
+_build_setup_and_patch() {
+    _build_setup "$1" "$2" "$3";
+    _apply_patches;
+}
+
+# run dopatch.sh in patches folder
 _apply_patches() {
     echo "Apply patching..";
     [ -f "../patches/dopatch.sh" ] && sh ../patches/dopatch.sh;
 }
 
+# check require command: eg; _require ls ps
 _require() {
-    local bin="$1";
-    if ! type -p $bin &>/dev/null; then
-        echo "This script require $bin";
-        exit 1;
-    fi
+    local bin="$@";
+    for b in $bin; do
+        [ "x${b}" = "x" ] && continue;
+        if ! type -p $b &>/dev/null; then
+            echo "This script require $bin";
+            exit 1;
+        fi
+    done
 }
 

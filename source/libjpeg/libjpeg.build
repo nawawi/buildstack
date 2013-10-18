@@ -6,9 +6,8 @@ NAME="libjpeg-turbo";
 VER="1.3.0";
 SRC_FILE="${NAME}-${VER}.tar.gz";
 SRC_DIR="${NAME}-${VER}";
-DLURL="
-http://downloads.sourceforge.net/project/libjpeg-turbo/$VER/$SRC_FILE
-http://dl.cenbia.com/pkg";
+DLURL="http://downloads.sourceforge.net/project/libjpeg-turbo/$VER/$SRC_FILE ";
+DLURL+="http://dl.cenbia.com/pkg";
 
 # load config
 source "../../build.d/source-config.sh" &>/dev/null;

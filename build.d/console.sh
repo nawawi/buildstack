@@ -31,6 +31,18 @@ _RUN_SHELL() {
         $cmd;
         exit $?;
     fi
+cat << _END_
+
+Available command:
+httpd-control           - control script for http daemon
+mysqld-control          - control script for mariadb daemon
+php-fpm-control         - control script for php-fpm daemon
+httpd-selfsign-cert     - generate sel-sign https certificate
+cenbia-start            - start service
+cenbia-stop             - stop service
+cenbia-restart          - restart service
+
+_END_
     exec /bin/bash --norc --noprofile --login
 }
 
@@ -75,6 +87,20 @@ _RESTART() {
     _START $@;
 }
 
+_HELP() {
+cat << _END_
+
+Usage: $0 [start|stop|restart] [all|httpd|mysqld|php-fpm]
+       $0 shell [command]
+
+$0 start    - start all service
+$0 stop     - stop all service
+$0 restart  - restart all service
+$0 shell    - execute cenbia cli
+
+_END_
+}
+
 case $1 in
     start)
         _START $@
@@ -89,8 +115,7 @@ case $1 in
         _RUN_SHELL $@
     ;;
     *)
-    echo "Usage: $0 [start|stop|restart] [all|httpd|mysqld|php-fpm]";
-    echo "       $0 shell [command]";
+    _HELP;
     exit 1;
 esac    
 

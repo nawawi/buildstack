@@ -6,16 +6,14 @@ NAME="mariadb";
 VER="5.5.33a";
 SRC_FILE="${NAME}-${VER}.tar.gz";
 SRC_DIR="${NAME}-${VER}";
-DLURL="
-https://downloads.mariadb.org/f/$SRC_DIR/kvm-tarbake-jaunty-x86/$SRC_FILE/from/http:/ftp.kaist.ac.kr/mariadb
-http://dl.cenbia.com/pkg";
+DLURL="https://downloads.mariadb.org/f/$SRC_DIR/kvm-tarbake-jaunty-x86/$SRC_FILE/from/http:/ftp.kaist.ac.kr/mariadb ";
+DLURL+="http://dl.cenbia.com/pkg";
 
 # load config
 source "../../build.d/source-config.sh" &>/dev/null;
 [ -z "${INST_DIR}" ] && { echo "${NAME}: Load config failed"; exit 1; };
 
-_build_setup "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
-_apply_patches;
+_build_setup_and_patch "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
 
 _CONFIG_DIR="${INST_DIR}/etc/mysql";
 export _CONFIG_DIR;

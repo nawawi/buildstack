@@ -12,8 +12,7 @@ DLURL="ftp://xmlsoft.org/libxml2 http://dl.cenbia.com/pkg";
 source "../../build.d/source-config.sh" &>/dev/null;
 [ -z "${INST_DIR}" ] && { echo "${NAME}: Load config failed"; exit 1; };
 
-_build_setup "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
-_apply_patches;
+_build_setup_and_patch "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
 
 ./configure --prefix=$INST_DIR \
 --without-python \

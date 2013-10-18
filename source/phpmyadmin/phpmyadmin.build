@@ -6,9 +6,8 @@ NAME="phpMyAdmin";
 VER="4.0.8";
 SRC_FILE="${NAME}-${VER}-english.tar.gz";
 SRC_DIR="${NAME}-${VER}-english";
-DLURL="
-http://downloads.sourceforge.net/project/phpmyadmin/phpMyAdmin/$VER/$SRC_FILE 
-http://dl.cenbia.com/pkg";
+DLURL="http://downloads.sourceforge.net/project/phpmyadmin/phpMyAdmin/$VER/$SRC_FILE ";
+DLURL+="http://dl.cenbia.com/pkg";
 
 # load config
 source "../../build.d/source-config.sh" &>/dev/null;

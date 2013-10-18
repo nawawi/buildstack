@@ -30,12 +30,3 @@ _printdot() {
 _msg() {
     echo -n "$@";
 }
-
-_chkport() {
-    if type -p netstat &>/dev/null; then
-        if netstat -an | egrep ":$1 .*LISTEN" > /dev/null; then
-            return 0;
-        fi
-    fi
-    return 1
-}

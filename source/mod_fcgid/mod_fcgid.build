@@ -6,12 +6,10 @@ NAME="mod_fcgid";
 VER="2.3.7";
 SRC_FILE="${NAME}-${VER}.tar.gz";
 SRC_DIR="${NAME}-${VER}";
-DLURL="
-http://www.globalish.com/am/httpd/mod_fcgid
-http://apache.mirrors.lucidnetworks.net/httpd/mod_fcgid
-http://mirrors.gigenet.com/apache/httpd/mod_fcgid
-http://dl.cenbia.com/pkg
-";
+DLURL="http://www.globalish.com/am/httpd/mod_fcgid ";
+DLURL+="http://apache.mirrors.lucidnetworks.net/httpd/mod_fcgid ";
+DLURL+="http://mirrors.gigenet.com/apache/httpd/mod_fcgid ";
+DLURL+="http://dl.cenbia.com/pkg";
 
 # load config
 source "../../build.d/source-config.sh" &>/dev/null;

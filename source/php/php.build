@@ -6,17 +6,15 @@ NAME="php";
 VER="5.4.20";
 SRC_FILE="${NAME}-${VER}.tar.gz";
 SRC_DIR="${NAME}-${VER}";
-DLURL="
-http://my1.php.net/get/${SRC_FILE}/from/this/mirror
-http://my1.php.net/get/${SRC_FILE}/from/id1.php.net/mirror
-http://dl.cenbia.com/pkg";
+DLURL="http://my1.php.net/get/${SRC_FILE}/from/this/mirror ";
+DLURL+="http://my1.php.net/get/${SRC_FILE}/from/id1.php.net/mirror ";
+DLURL+="http://dl.cenbia.com/pkg";
 
 # load config
 source "../../build.d/source-config.sh" &>/dev/null;
 [ -z "${INST_DIR}" ] && { echo "${NAME}: Load config failed"; exit 1; };
 
-_build_setup "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
-_apply_patches;
+_build_setup_and_patch "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
 
 export CFLAGS="${CFLAGS} -fno-strict-aliasing -Wno-pointer-sign";
 export LDFLAGS="${LDFLAGS} -ljemalloc -L$INST_DIR/lib/mysql";

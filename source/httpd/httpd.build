@@ -6,11 +6,10 @@ NAME="httpd";
 VER="2.4.6";
 SRC_FILE="${NAME}-${VER}.tar.gz";
 SRC_DIR="${NAME}-${VER}";
-DLURL="
-http://apache.mirrors.hoobly.com/httpd
-http://www.fightrice.com/mirrors/apache/httpd
-http://www.eng.lsu.edu/mirrors/apache/httpd
-http://dl.cenbia.com/pkg";
+DLURL="http://apache.mirrors.hoobly.com/httpd ";
+DLURL+="http://www.fightrice.com/mirrors/apache/httpd ";
+DLURL+="http://www.eng.lsu.edu/mirrors/apache/httpd ";
+DLURL+="http://dl.cenbia.com/pkg";
 
 # load config
 source "../../build.d/source-config.sh" &>/dev/null;
@@ -22,16 +21,18 @@ _APR_NAME="apr";
 _APR_VER="1.4.8";
 _APR_SRC_FILE="${_APR_NAME}-${_APR_VER}.tar.gz";
 _APR_SRC_DIR="${_APR_NAME}-${_APR_VER}";
-_APDL="http://www.apache.org/dist/apr http://dl.cenbia.com/pkg";
+_APR_DLURL="http://www.apache.org/dist/apr http://dl.cenbia.com/pkg";
+
 _APU_NAME="apr-util";
 _APU_VER="1.5.2";
 _APU_SRC_FILE="${_APU_NAME}-${_APU_VER}.tar.gz";
 _APU_SRC_DIR="${_APU_NAME}-${_APU_VER}";
+_APU_DLURL="http://www.apache.org/dist/apr http://dl.cenbia.com/pkg";
 
 _clean_src "${_APR_SRC_DIR}";
-_extract_file "${_APR_SRC_FILE}" "${_APDL}";
+_extract_file "${_APR_SRC_FILE}" "${_APR_DLURL}";
 _clean_src "${_APU_SRC_DIR}";
-_extract_file "${_APU_SRC_FILE}" "${_APDL}";
+_extract_file "${_APU_SRC_FILE}" "${_APU_DLURL}";
 
 # clean
 if [ -d "${INST_DIR}/lib/httpd" ]; then
@@ -43,8 +44,7 @@ if [ -d "${INST_DIR}/lib/httpd" ]; then
 fi
 
 # setup
-_build_setup "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
-_apply_patches;
+_build_setup_and_patch "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
 
 _USER="nobody";
 _GROUP="nobody";
