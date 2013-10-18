@@ -34,7 +34,7 @@ chmod 755 build
 
 Usage
 ------
-For development: ./build
+For development: ./build  
 For dist release: ./build --dist
 
 Please type ./build --help for more options.
