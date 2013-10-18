@@ -44,7 +44,7 @@ else
     fi
 fi
 
-for x in gcc g++ cmake make nasm autoconf automake sed install libtool patch rm grep rsync wget; do
+for x in gcc g++ cmake make nasm autoconf automake sed install libtool patch rm grep rsync wget date cp mv; do
     if ! type -p $x &>/dev/null; then
         _false "This software require '${x}' command";
     fi
@@ -60,7 +60,9 @@ _WITHOUT_STRIP="no";
 _WITHOUT_UTILS="no";
 
 # mandatory
-_UTILS_BIN="curl openssl iconv php php-fpm php-cgi httpd mysqld mysql checkport cenbia cenbia-first-setup";
+_UTILS_BIN="curl openssl iconv php php-fpm php-cgi ";
+_UTILS_BIN+="httpd mysqld mysql checkport ";
+_UTILS_BIN+="cenbia cenbia-first-setup cenbia-start cenbia-stop cenbia-restart";
 
 # path
 _BUILD_PATH="$(dirname $0)";
@@ -100,18 +102,22 @@ _copydev() {
         if [ ! -d "${_CENBIA_ROOT_PATH}-devel" ]; then
             _false "Cannot create development files";
         fi
-        cp -fau -P -p --parents $src ${_CENBIA_ROOT_PATH}-devel/;
-        if [ $? = 0 ]; then
-            rm -rf $src;
+        if [ -e $src ]; then
+            cp -fau -P -p --parents $src ${_CENBIA_ROOT_PATH}-devel/;
+            if [ $? = 0 ]; then
+                rm -rf $src;
+            fi
         fi
     fi
 }
 _copydev_done() {
-    if [ -d "${_CENBIA_ROOT_PATH}-devel" ] && [ -d "${_CENBIA_ROOT_PATH}-devel/opt/cenbia" ]; then
-        mv ${_CENBIA_ROOT_PATH}-devel/opt/cenbia ${_CENBIA_ROOT_PATH}-devel/;
-        rm -rf ${_CENBIA_ROOT_PATH}-devel/opt;
+    local dname="$(dirname $_CENBIA_ROOT_PATH)";
+    local fname="$(basename $_CENBIA_ROOT_PATH)";
+    if [ -d "${_CENBIA_ROOT_PATH}-devel" ] && [ -d "${_CENBIA_ROOT_PATH}-devel/${_CENBIA_ROOT_PATH}" ]; then
+        rm -rf ${_CENBIA_ROOT_PATH}-devel/${_CENBIA_ROOT_PATH}/.build;
+        mv ${_CENBIA_ROOT_PATH}-devel/${_CENBIA_ROOT_PATH} ${_CENBIA_ROOT_PATH}-devel/;
         if cd ${_CENBIA_ROOT_PATH}-devel; then
-            fdv="cenbia-${_CENBIA_VERSION}-${_CENBIA_ARCH}bit-devel.tar.gz";
+            local fdv="cenbia-${_CENBIA_VERSION}-${_CENBIA_ARCH}bit-devel.tar.gz";
             tar -zcf $fdv cenbia;
             if [ $? = 0 ]; then
                 mv $fdv  $_BUILD_PATH;
@@ -119,6 +125,21 @@ _copydev_done() {
         fi
         cd $_BUILD_PATH;
         rm -rf ${_CENBIA_ROOT_PATH}-devel;
+        if cd $dname; then
+            if [ -d "${fname}" ]; then
+                local fdr="cenbia-${_CENBIA_VERSION}-${_CENBIA_ARCH}bit.tar.gz";
+                tar --exclude="*/.build" -zcf $_BUILD_PATH/$fdr $fname;
+
+            fi
+        fi
+
+        cd $_BUILD_PATH;
+        if [ "$?" = "0" -a -f "${fdv}" -a -n "${dname}" ]; then
+            tar -C $dname/ -zxvf $fdv
+        fi
+
+        [ -f $fdr ] && _echo "Release file: ${_BUILD_PATH}/${fdr}";
+        [ -f $fdv ] && _echo "Development file: ${_BUILD_PATH}/${fdr}";
     fi
 }
 
@@ -202,7 +223,7 @@ _DOBUILD() {
         _false "Failed to build $f";
     else
         [ ! -d "${_CENBIA_ROOT_PATH}/.build" ] && mkdir -p $_CENBIA_ROOT_PATH/.build;
-        touch $_CENBIA_ROOT_PATH/.build/$f;
+        date > $_CENBIA_ROOT_PATH/.build/$f;
     fi
     if [ -d "./license" ]; then
         [ ! -d "${_CENBIA_ROOT_PATH}/licenses" ] && mkdir -p $_CENBIA_ROOT_PATH/licenses;
@@ -466,7 +487,6 @@ _MAIN() {
             "--dist" | "-dist" | "-r" )
                 _DOSET "dist";
                 _BUILD;
-                rm -rf $_CENBIA_ROOT_PATH/.build;
                 _ok=1;
             ;;
             "--dev" | "-dev" | "-d" )

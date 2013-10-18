@@ -21,7 +21,9 @@ export CXXFLAGS="${CXXFLAGS} -fno-strict-aliasing";
 cd source
 autoconf
 ./configure --prefix=$INST_DIR \
---with-data-packaging=library --disable-samples
+--sbindir=$INST_DIR/bin \
+--with-data-packaging=library --disable-samples \
+--enable-rpath
 
 sed -i 's|-nodefaultlibs -nostdlib||' config/mh-linux
 sed -i 's|^LIBS =.*|LIBS = -L../lib -licuuc -lpthread -lm|' i18n/Makefile
