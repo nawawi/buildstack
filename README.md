@@ -8,16 +8,29 @@ Requirement
 -----------
 1. Bash version 3 or higher.
 2. Internet Connection. By default BuildStack will download source package if not exist.
-3. Superuser "root" access. 
-4. Development/compiling tools such as gcc, g++, and perl.
-
-   Complete CentOS package or similar: 
-   gcc gcc-c++ cmake make autoconf libtool bison libgcc unixODBC-devel readline-devel gnutls-devel 
-   krb5-devel freetds-devel pam-devel bash sed coreutils rsync patch nasm. 
+3. Superuser "root" access.
+4. Development/compiling tools such as gcc, g++, and perl.  
+   Complete CentOS package or similar:  
+   gcc gcc-c++ cmake make autoconf libtool bison libgcc unixODBC-devel readline-devel gnutls-devel  
+   krb5-devel freetds-devel pam-devel bash sed coreutils rsync patch nasm.  
 
    If you're using CentOS 6. Please install "epel" repo and run script "bash ./build.d/centos-rpm"
 
 5. ccache for faster compiling.
+
+Download
+--------
+git clone git@github.com:nawawi/buildstack.git  
+cd buildstack  
+chmod 755 build  
+
+or
+
+wget https://github.com/nawawi/buildstack/archive/master.zip  
+unzip master.zip  
+mv buildstack-master buildstack  
+cd buildstack  
+chmod 755 build  
 
 Usage
 ------
