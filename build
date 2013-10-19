@@ -34,6 +34,13 @@ _true() {
     exit 0;
 }
 
+# remove leading/trailing whitespace
+_trim() {
+    local str="$@";
+    str="${str#"${str%%[![:space:]]*}"}";
+    str="${str%"${str##*[![:space:]]}"}";
+    echo -n "${str}";
+}
 
 # check if bash
 if [ "x${BASH_VERSION}" = "x" ]; then
@@ -44,11 +51,22 @@ else
     fi
 fi
 
-for x in gcc g++ cmake make nasm autoconf automake sed install libtool patch rm grep rsync wget date cp mv; do
-    if ! type -p $x &>/dev/null; then
-        _false "This software require '${x}' command";
-    fi
-done
+_check_cmd() {
+    local cmd nf;
+    cmd="gcc g++ cmake make nasm autoconf ";
+    cmd+="automake sed install libtool patch ";
+    cmd+="rm grep rsync wget date cp mv";
+    nf="";
+    for x in $cmd; do
+        if ! type -p $x &>/dev/null; then
+            nf+="${x} ";
+        fi
+    done
+    [ -n "${nf}" ] && {
+        _false "This software require '$(_trim "${nf}")' command";
+    }
+}
+_check_cmd;
 
 # setting
 _WITHOUT_MAN="no";
@@ -58,6 +76,7 @@ _WITHOUT_STATIC="no";
 _WITHOUT_DEV="no";
 _WITHOUT_STRIP="no";
 _WITHOUT_UTILS="no";
+_REBUILD="no";
 
 # mandatory
 _UTILS_BIN="curl openssl iconv php php-fpm php-cgi ";
@@ -181,7 +200,7 @@ _DOSET() {
 }
 
 _CLEAN() {
-    if [ -d "${_CENBIA_ROOT_PATH}" -a "${_CENBIA_ROOT_PATH}" != "/" ]; then
+    if [ -n "${_REBUILD}" -a "${_REBUILD}" = "yes" -a -d "${_CENBIA_ROOT_PATH}" -a "${_CENBIA_ROOT_PATH}" != "/" ]; then
         read -p "This operation will remove ${_CENBIA_ROOT_PATH}, are you want to proceed [Y/N/C]: " ans;
         while [ "$ans" != "Y" -a "$ans" != "y" -a "$ans" != "N" -a "$ans" != "n" -a "$ans" != "C" -a "$ans" != "c" ]; do
             echo "Please enter Y or N. C for cancel";
@@ -346,9 +365,9 @@ _FINISH() {
         sed -i -e "s|@INST_DIR|$_CENBIA_INST_PATH|g" $_cbin;
         chmod 755 $_cbin;
     fi
-    if [ -f "${_BUILD_PATH}/build.d/cenbia-start" ]; then
+    if [ -f "${_BUILD_PATH}/build.d/cenbia-start.sh" ]; then
         _cbin="${_CENBIA_INST_PATH}/bin/cenbia-start";
-        cp -f ${_BUILD_PATH}/build.d/cenbia-start $_cbin;
+        cp -f ${_BUILD_PATH}/build.d/cenbia-start.sh $_cbin;
         sed -i -e "s|@ROOT_DIR|$_CENBIA_ROOT_PATH|g" $_cbin;
         sed -i -e "s|@INST_DIR|$_CENBIA_INST_PATH|g" $_cbin;
         chmod 755 $_cbin;
@@ -500,6 +519,7 @@ _MAIN() {
                 _ok=2;
             ;;
             "--rebuild" | "-rebuild" | "-R" )
+                _REBUILD="yes";
                 if [ -d "${_CENBIA_ROOT_PATH}/.build" ]; then
                     rm -rf $_CENBIA_ROOT_PATH/.build;
                 fi

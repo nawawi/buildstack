@@ -145,6 +145,9 @@ if [ "$ret" = "0" ]; then
     mkdir -p $INST_DIR/etc/httpd/ssl.key;
     mkdir -p $INST_DIR/etc/httpd/ssl.crt;
 
+    # temp: 19102013
+    mkdir -p $INST_DIR/etc/httpd/sites/pools;
+
     if [ -f "../patches/cert_config" ]; then
         cp ../patches/cert_config $INST_DIR/etc/httpd/cert_config;
         chmod 644 $INST_DIR/etc/httpd/cert_config;

@@ -30,8 +30,13 @@ export PEAR_INSTALLDIR;
 _CONFIG_DIR="${INST_DIR}/etc/php";
 export _CONFIG_DIR;
 
-if [ "${_CENBIA_ARCH}" = "64" -a ! -f "/usr/lib/libsybdb.so" -a -f "/usr/lib64/libsybdb.so" ]; then
-    ln -sf /usr/lib64/libsybdb.so /usr/lib/libsybdb.so;
+if [ "${_CENBIA_ARCH}" = "64" -a ! -f "/usr/lib/libsybdb.so" ]; then
+    for fx in /usr/lib/x86_64-linux-gnu/libsybdb.so /usr/lib64/libsybdb.so; do
+        if [ -e $fx ]; then
+            ln -sf $fx /usr/lib/libsybdb.so;
+            break;
+        fi
+    done
 fi
 
 rm -f TSRM/tsrm_win32.h \

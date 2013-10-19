@@ -15,6 +15,7 @@ source "../../build.d/source-config.sh" &>/dev/null;
 
 _build_setup "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
 cd ../;
+[ -d "${INST_DIR}/phpmyadmin" ] && rm -rf $INST_DIR/phpmyadmin;
 mv -v $SRC_DIR $INST_DIR/phpmyadmin;
 ret="$?";
 if [ "$ret" = "0" ]; then
