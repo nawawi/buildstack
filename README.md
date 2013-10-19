@@ -9,13 +9,7 @@ Requirement
 1. Bash version 3 or higher.
 2. Internet Connection. By default BuildStack will download source package if not exist.
 3. Superuser "root" access.
-4. Development/compiling tools such as gcc, g++, and perl.  
-   Complete CentOS package or similar:  
-   gcc gcc-c++ cmake make autoconf libtool bison libgcc unixODBC-devel readline-devel gnutls-devel  
-   krb5-devel freetds-devel pam-devel bash sed coreutils rsync patch nasm.  
-
-   If you're using CentOS 6. Please install "epel" repo and run script "bash ./build.d/centos-rpm"
-
+4. Development/compiling tools such as gcc, g++, and perl.
 5. ccache for faster compiling.
 
 Download
@@ -32,8 +26,23 @@ mv buildstack-master buildstack
 cd buildstack  
 chmod 755 build  
 
-Usage
-------
+Setup
+-----
+BuildStack has tested on:
+
+1. CentOS 6 64bit.
+2. Ubuntu 12.04 64bit.
+
+**CentOS**  
+`rpm -ivh http://ftp.neowiz.com/fedora-epel/6/i386/epel-release-6-8.noarch.rpm`  
+`yum -y update`  
+`sh ./build.d/setup-centos.sh`
+
+**Ubuntu**  
+`sh ./build.d/setup-ubuntu.sh`
+
+Build
+-----
 For development: ./build  
 For dist release: ./build --dist
 
