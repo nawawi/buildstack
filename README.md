@@ -20,7 +20,7 @@ Requirement
 
 Download
 --------
-git clone git@github.com:nawawi/buildstack.git  
+git clone https://github.com/nawawi/buildstack.git  
 cd buildstack  
 chmod 755 build  
 
