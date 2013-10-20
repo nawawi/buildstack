@@ -14,17 +14,17 @@ Requirement
 
 Download
 --------
-git clone https://github.com/nawawi/buildstack.git  
-cd buildstack  
-chmod 755 build  
+`git clone https://github.com/nawawi/buildstack.git`  
+`cd buildstack`  
+`chmod 755 build`  
 
 or
 
-wget https://github.com/nawawi/buildstack/archive/master.zip  
-unzip master.zip  
-mv buildstack-master buildstack  
-cd buildstack  
-chmod 755 build  
+`wget https://github.com/nawawi/buildstack/archive/master.zip`  
+`unzip master.zip`  
+`mv buildstack-master buildstack`  
+`cd buildstack`  
+`chmod 755 build`  
 
 Setup
 -----
