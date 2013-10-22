@@ -40,12 +40,12 @@ BuildStack has tested on:
 `./build.d/setup-centos.sh`
 
 **Ubuntu**  
-apt-get update  
-apt-get upgrade  
+`apt-get update`  
+`apt-get upgrade`  
 `./build.d/setup-ubuntu.sh`
 
 **Arch Linux**  
-pacman -Syu  
+`pacman -Syu`  
 `./build.d/setup-archlinux.sh`
 
 Build
