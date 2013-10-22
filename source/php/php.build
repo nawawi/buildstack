@@ -16,10 +16,10 @@ source "../../build.d/source-config.sh" &>/dev/null;
 
 _build_setup_and_patch "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
 
-export CFLAGS="${CFLAGS} -fno-strict-aliasing -Wno-pointer-sign";
-export LDFLAGS="${LDFLAGS} -ljemalloc -L$INST_DIR/lib/mysql";
+export CFLAGS+=" -fno-strict-aliasing -Wno-pointer-sign";
+export LDFLAGS+=" -ljemalloc -L$INST_DIR/lib/mysql";
 # rpath
-export LDFLAGS="${LDFLAGS} -Wl,-rpath,$INST_DIR/lib/mysql";
+export LDFLAGS+=" -Wl,-rpath,$INST_DIR/lib/mysql";
 
 
 EXTENSION_DIR="${INST_DIR}/lib/php/modules";
@@ -30,7 +30,7 @@ export PEAR_INSTALLDIR;
 _CONFIG_DIR="${INST_DIR}/etc/php";
 export _CONFIG_DIR;
 
-if [ "${_CENBIA_ARCH}" = "64" -a ! -f "/usr/lib/libsybdb.so" ]; then
+if [ "${_B64}" = "1" -a ! -f "/usr/lib/libsybdb.so" ]; then
     for fx in /usr/lib/x86_64-linux-gnu/libsybdb.so /usr/lib64/libsybdb.so; do
         if [ -e $fx ]; then
             ln -sf $fx /usr/lib/libsybdb.so;
@@ -71,7 +71,7 @@ touch configure.in
 --with-gettext \
 --with-jpeg-dir=$INST_DIR \
 --with-freetype-dir=$INST_DIR \
---with-kerberos \
+--with-kerberos=$INST_DIR \
 --with-openssl=$INST_DIR \
 --with-mcrypt=$INST_DIR \
 --with-mhash=$INST_DIR \
@@ -94,7 +94,7 @@ touch configure.in
 --with-gd \
 --with-iconv=$INST_DIR \
 --with-libxml-dir=$INST_DIR \
---with-mssql=shared \
+--with-mssql=shared,$INST_DIR \
 --with-sqlite3=shared,$INST_DIR \
 --with-xmlrpc=shared \
 --with-imap=$INST_DIR \

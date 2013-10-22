@@ -18,11 +18,14 @@ _build_setup "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
 
 ./configure --prefix=$INST_DIR \
 --disable-static \
+--enable-versioned-symbols \
 --enable-hidden-symbols \
 --enable-ipv6 \
 --disable-manual \
 --enable-threaded-resolver \
 --with-ca-bundle=$INST_DIR/pki/tls/certs/ca-bundle.crt \
+--without-libidn \
+--with-random=/dev/urandom \
 --without-libssh2 \
 --with-ssl=$INST_DIR
 _exit_when_failed "Configure" "$?";

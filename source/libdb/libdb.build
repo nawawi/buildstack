@@ -15,12 +15,13 @@ source "../../build.d/source-config.sh" &>/dev/null;
 _build_setup_and_patch "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
 
 export CC=gcc;
-export CFLAGS="${CFLAGS} -fno-strict-aliasing";
+export CFLAGS+=" -fno-strict-aliasing";
 
-cd dist
+pushd ./dist;
 ./s_config
+popd;
 
-cd ../build_unix
+pushd ./build_unix;
 ../dist/configure --prefix=$INST_DIR \
 --enable-shared --enable-static --disable-rpath
 _exit_when_failed "Configure" "$?";
@@ -30,7 +31,7 @@ _exit_when_failed "Make" "$?";
 
 make install;
 ret="$?";
-cd ../
+popd;
 
 if [ "$ret" = "0" -a -d "${INST_DIR}/docs" ]; then
     mkdir -p $INST_DIR/share/doc/libdb;

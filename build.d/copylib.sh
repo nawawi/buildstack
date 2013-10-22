@@ -3,10 +3,7 @@
 source "./build.d/source-config.sh" &>/dev/null;
 [ -z "${INST_DIR}" ] && { echo "Load config failed"; exit 1; };
 
-_DESPATH="${INST_DIR}/lib32";
-if [ "$(uname -m | grep -c 64)" = "1" ]; then
-    _DESPATH="${INST_DIR}/lib64";
-fi
+_DESPATH="${INST_DIR}/libsys";
 
 # copy ld-linux* libc etc..etc..
 _noskip=0;

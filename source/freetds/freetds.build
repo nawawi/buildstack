@@ -1,12 +1,12 @@
 #!/bin/bash
 # cenbia build script: nawawi@rutweb.com
-# libiconv: ftp://ftp.gnu.org/gnu/libiconv/
+# freetds: http://www.freetds.org
 
-NAME="libiconv";
-VER="1.14";
-SRC_FILE="${NAME}-${VER}.tar.gz";
+NAME="freetds";
+VER="0.91";
+SRC_FILE="${NAME}-${VER}.tar.bz2";
 SRC_DIR="${NAME}-${VER}";
-DLURL="ftp://ftp.gnu.org/gnu/libiconv http://dl.cenbia.com/pkg";
+DLURL="ftp://ftp.freetds.org/pub/freetds/stable http://dl.cenbia.com/pkg";
 
 # load config
 source "../../build.d/source-config.sh" &>/dev/null;
@@ -16,8 +16,12 @@ _build_setup_and_patch "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
 
 ./configure \
 --prefix=$INST_DIR \
---enable-extra-encodings \
---enable-static
+--mandir=$INST_DIR/share/man \
+--libexecdir=$INST_DIR/lib \
+--sysconfdir=$INST_DIR/etc/freetds \
+--localstatedir=$ROOT_DIR/data/freetds \
+--sbindir=$INST_DIR/bin \
+--enable-msdblib --with-tdsver=7.0
 _exit_when_failed "Configure" "$?";
 
 make $SMPFLAGS;

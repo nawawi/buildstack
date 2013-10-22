@@ -14,7 +14,8 @@ source "../../build.d/source-config.sh" &>/dev/null;
 
 _build_setup_and_patch "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
 
-export="${CFLAGS} -Wa,--noexecstack -DPURIFY";
+CFLAGS+=" -Wa,--noexecstack -DPURIFY";
+export CFLAGS;
 
 ./config \
 --prefix=$INST_DIR \
@@ -22,7 +23,7 @@ export="${CFLAGS} -Wa,--noexecstack -DPURIFY";
 --with-zlib-include=$INST_DIR/include \
 --with-zlib-lib=$INST_DIR/lib \
 --with-krb5-flavor=MIT \
---with-krb5-dir=/usr \
+--with-krb5-dir=$INST_DIR \
 zlib enable-camellia enable-seed enable-tlsext enable-rfc3779 \
 enable-cms enable-md2 no-mdc2 no-rc5 no-ec no-ec2m no-ecdh no-ecdsa no-srp fips \
 shared
@@ -40,6 +41,14 @@ make install;
 ret=$?;
 
 if [ "$ret" = "0" ]; then
+    if pushd $INST_DIR/lib; then
+        libsslso="$(readlink libssl.so)";
+        [ "x${libsslso}" != "x" ] && ln -sf $libsslso libssl.so.1.0.0;
+        libcryptoso="$(readlink libcrypto.so)";
+        [ "x${libcryptoso}" != "x" ] && ln -sf $libcryptoso libcrypto.so.1.0.0;
+        popd;
+    fi
+
     _pdir="${INST_DIR}/etc/pki/tls/certs";
     rm -f $_pdir/*;
 
@@ -57,7 +66,7 @@ if [ "$ret" = "0" ]; then
         cp -fv ../patches/ca-bundle.crt $_pdir/ca-bundle.crt;
     fi
 
-    rsync -artvl $INST_DIR/etc/pki/tls/man/* $INST_DIR/share/man/
+    rsync -artl $INST_DIR/etc/pki/tls/man/* $INST_DIR/share/man/
     rm -rf $INST_DIR/etc/pki/tls/man
 fi
 

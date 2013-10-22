@@ -2,15 +2,17 @@
 # ubuntu package
 apt-get install \
 build-essential \
-coreutils rsync patch \
+coreutils rsync patch wget \
 cmake \
 ccache \
 nasm autoconf automake libtool \
-libkrb5-dev \
 libpam0g-dev \
-freetds-dev
+libsasl2-dev \
+ss-dev \
+comerr-dev \
+bison flex
 
-if ! grep -q nobody /etc/groups &>/dev/null; then
+if ! grep -q nobody /etc/group &>/dev/null; then
     groupadd nobody &>/dev/null;
 fi
 

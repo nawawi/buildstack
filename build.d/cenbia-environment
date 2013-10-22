@@ -4,18 +4,17 @@
 # This file contains environment setting and function to be used by all
 # cenbia shell scripts.
 #
-_CLDPATH="@INST_DIR/lib:@INST_DIR/lib/mysql:@INST_DIR/lib/httpd";
-_CLIBPATH64="${_CLDPATH}:@INST_DIR/lib64:/lib64:/usr/lib64:/usr/local/lib64:/lib:/usr/lib:/usr/local/lib";
-_CLIBPATH="${_CLDPATH}:@INST_DIR/lib32:/lib32:/usr/lib32:/usr/local/lib32:/lib:/usr/lib:/usr/local/lib";
-if [ "$(uname -m | grep -c 64)" = "1" ]; then
-    _CLIBPATH="${_CLIBPATH64}";
-fi
+
+_INST_DIR="@INST_DIR";
+_CLIBPATH="${_INST_DIR}/lib:${_INST_DIR}/lib/mysql:${_INST_DIR}/lib/httpd";
+_CLIBPATH+="${_INST_DIR}/libsys";
+
 if [ -n "${LD_LIBRARY_PATH}" ]; then
     export LD_LIBRARY_PATH="${_CLIBPATH}:${LD_LIBRARY_PATH}";
 else
     export LD_LIBRARY_PATH="${_CLIBPATH}";
 fi
-export PATH=@ROOT_DIR/exec:@INST_DIR/bin:$PATH;
+export PATH=${_INST_DIR}/bin:$PATH;
 export HISTFILE=@ROOT_DIR/.history;
 
 _success() {

@@ -14,11 +14,17 @@ source "../../build.d/source-config.sh" &>/dev/null;
 
 _build_setup_and_patch "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
 
+# save
+OLD_LD_LIBRARY_PATH=$LD_LIBRARY_PATH;
+OLD_PATH=$PATH;
+
 # clean if already install
-find $INST_DIR/include/ -name "*curses*" | xargs rm -f;
-find $INST_DIR/include/ -name "*term*" | xargs rm -f;
-find $INST_DIR/lib/ -name "*curses*" | xargs rm -f;
-rm -rf $INST_DIR/include/ncurses*;
+for fn in $(find $INST_DIR/include/ -name "*curses*") $(find $INST_DIR/include/ -name "*term*"); do
+    [ -f "$fn" ] && rm -fv $fn;
+done
+rm -rfv $INST_DIR/include/ncurses*;
+rm -rfv $INST_DIR/include/tic.h;
+rm -rfv $INST_DIR/bin/tic;
 
 # build libncurses and libncursesw
 _configure() {
@@ -43,9 +49,10 @@ if cd narrowc; then
     ln -s ../configure .;
     _configure --with-ticlib
     _exit_when_failed "Configure" "$?";
-
     make $SMPFLAGS;
     _exit_when_failed "Make" "$?";
+    export PATH=`pwd`/progs:$PATH;
+    export LD_LIBRARY_PATH=`pwd`/lib:$LD_LIBRARY_PATH;
 fi
 
 if cd ../widec; then
@@ -79,4 +86,3 @@ rm -f $INST_DIR/lib/terminfo;
 rm -f $INST_DIR/lib/pkgconfig/{*_g,ncurses++*}.pc;
 
 _exit_and_cleanup "0" "${SRC_DIR}";
-

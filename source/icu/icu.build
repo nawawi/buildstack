@@ -15,10 +15,10 @@ source "../../build.d/source-config.sh" &>/dev/null;
 _build_setup "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
 
 export CC=gcc;
-export CFLAGS="${CFLAGS} -fno-strict-aliasing";
-export CXXFLAGS="${CXXFLAGS} -fno-strict-aliasing";
+export CFLAGS+=" -fno-strict-aliasing";
+export CXXFLAGS+=" -fno-strict-aliasing";
 
-cd source
+pushd ./source;
 autoconf
 ./configure --prefix=$INST_DIR \
 --sbindir=$INST_DIR/bin \
@@ -41,5 +41,6 @@ make $SMPFLAGS;
 _exit_when_failed "Make" "$?";
 
 make install;
-cd ../
+
+popd;
 _exit_and_cleanup "$?" "${SRC_DIR}";

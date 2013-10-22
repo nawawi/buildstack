@@ -1,0 +1,53 @@
+#!/bin/bash
+# cenbia build script: nawawi@rutweb.com
+# libldap: http://www.openldap.org
+
+NAME="krb5";
+VER="1.11.3";
+SRC_FILE="${NAME}-${VER}-signed.tar";
+SRC_DIR="${NAME}-${VER}";
+DLURL="http://web.mit.edu/kerberos/dist/${NAME}/1.11 http://dl.cenbia.com/pkg";
+
+# load config
+source "../../build.d/source-config.sh" &>/dev/null;
+[ -z "${INST_DIR}" ] && { echo "${NAME}: Load config failed"; exit 1; };
+
+_extract_file "${SRC_FILE}" "${DLURL}";
+
+# setup
+srcdir="${SRC_DIR}/src";
+cwd="$(pwd)";
+
+tar -zxvf ${NAME}-${VER}.tar.gz;
+_change_dir "${srcdir}";
+
+#rm lib/krb5/krb/deltat.c;
+sed -i "/KRB5ROOT=/s/\/local//" util/ac_check_krb5.m4;
+
+export CFLAGS+=" -fPIC -fno-strict-aliasing -fstack-protector-all"
+export CPPFLAGS+=" -I/usr/include/et"
+
+./configure --prefix=$INST_DIR \
+--sbindir=$INST_DIR/bin \
+--sysconfdir=$INST_DIR/etc \
+--mandir=$INST_DIR/share/man \
+--localstatedir=$ROOT_DIR/data \
+--enable-shared \
+--with-system-et \
+--with-system-ss \
+--disable-rpath \
+--without-tcl \
+--enable-dns-for-realm \
+--with-ldap \
+--without-system-verto
+_exit_when_failed "Configure" "$?";
+
+make $SMPFLAGS;
+_exit_when_failed "Make" "$?";
+
+make install;
+ret="$?";
+cd $cwd;
+rm -f *.gz *.asc;
+rm -rf $SRC_DIR;
+exit $ret;

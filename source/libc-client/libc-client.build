@@ -14,10 +14,7 @@ source "../../build.d/source-config.sh" &>/dev/null;
 
 _build_setup_and_patch "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
 
-# Kerberos setup (centos)
-test -f /etc/profile.d/krb5-devel.sh && source /etc/profile.d/krb5-devel.sh
-test -f /etc/profile.d/krb5.sh && source /etc/profile.d/krb5.sh
-GSSDIR="$(krb5-config --prefix)"
+GSSDIR="$($INST_DIR/bin/krb5-config --prefix)"
 
 soname="c-client";
 somajver="2007";
@@ -26,8 +23,8 @@ ssldir="${INST_DIR}/etc/pki/tls";
 includedir="${INST_DIR}/include";
 libdir="${INST_DIR}/lib";
 
-EXTRACFLAGS="$(pkg-config --cflags openssl 2>/dev/null)";
-export CFLAGS="${CFLAGS} ${EXTRACFLAGS} -fPIC -fno-strict-aliasing -Wno-pointer-sign -Wno-parentheses";
+EXTRACFLAGS="$($INST_DIR/bin/pkg-config --cflags openssl 2>/dev/null)";
+export CFLAGS+=" ${EXTRACFLAGS} -fPIC -fno-strict-aliasing -Wno-pointer-sign -Wno-parentheses";
 
 echo -e "y\ny" | \
 make $SMPFLAGS lnp \

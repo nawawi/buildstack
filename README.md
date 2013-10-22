@@ -30,16 +30,23 @@ Setup
 -----
 BuildStack has tested on:
 
-1. CentOS 6 64bit.
-2. Ubuntu 12.04 64bit.
+1. CentOS 6.4 (x86_64).
+2. Ubuntu 12.04 (x86_64).
+3. Arch Linux 2013.10.01 (x86_64). 
 
 **CentOS**  
 `rpm -ivh http://ftp.neowiz.com/fedora-epel/6/i386/epel-release-6-8.noarch.rpm`  
 `yum -y update`  
-`sh ./build.d/setup-centos.sh`
+`./build.d/setup-centos.sh`
 
 **Ubuntu**  
-`sh ./build.d/setup-ubuntu.sh`
+apt-get update  
+apt-get upgrade  
+`./build.d/setup-ubuntu.sh`
+
+**Arch Linux**  
+pacman -Syu  
+`./build.d/setup-archlinux.sh`
 
 Build
 -----

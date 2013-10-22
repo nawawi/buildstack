@@ -8,7 +8,13 @@ bzip2
 libjpeg
 libpng
 freetype
+icu
+libdb
+libldap
+libkrb5
 openssl
+unixodbc
+freetds
 gd
 libiconv
 gettext
@@ -19,7 +25,6 @@ pcre
 curl
 libaio
 libevent
-libdb
 sqlite
 mariadb
 httpd
@@ -27,7 +32,6 @@ mod_fcgid
 mod_fastcgi
 libmcrypt
 mhash
-icu
 libc-client
 php
 phpmyadmin

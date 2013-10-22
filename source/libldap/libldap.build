@@ -1,0 +1,53 @@
+#!/bin/bash
+# cenbia build script: nawawi@rutweb.com
+# libldap: http://www.openldap.org
+
+NAME="openldap";
+VER="2.4.36";
+SRC_FILE="${NAME}-${VER}.tgz";
+SRC_DIR="${NAME}-${VER}";
+DLURL="ftp://ftp.openldap.org/pub/OpenLDAP/openldap-release http://dl.cenbia.com/pkg";
+
+# load config
+source "../../build.d/source-config.sh" &>/dev/null;
+[ -z "${INST_DIR}" ] && { echo "${NAME}: Load config failed"; exit 1; };
+
+_build_setup_and_patch "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
+
+# clean
+rm -rf $INST_DIR/lib/libldap*;
+
+# configure
+./configure \
+--prefix=$INST_DIR \
+--mandir=$INST_DIR/share/man \
+--libexecdir=$INST_DIR/lib \
+--sysconfdir=$INST_DIR/etc/openldap \
+--localstatedir=$ROOT_DIR/data/openldap \
+--sbindir=$INST_DIR/bin \
+--enable-ipv6 --enable-syslog --enable-local \
+--enable-bdb --enable-hdb \
+--enable-crypt --enable-dynamic \
+--with-threads --disable-wrappers \
+--without-fetch \
+--enable-spasswd --with-cyrus-sasl \
+--enable-overlays=mod --enable-modules=yes
+_exit_when_failed "Configure" "$?";
+
+make $SMPFLAGS;
+_exit_when_failed "Make" "$?";
+
+for dir in include libraries; do
+    pushd ${dir};
+    make install;
+    _exit_when_failed "Install" "$?";
+    popd;
+done
+
+if pushd $INST_DIR/lib; then
+    ln -sf liblber.so liblber.so.2;
+    ln -sf libldap.so libldap.so.2;
+    popd;
+fi
+
+_exit_and_cleanup "0" "${SRC_DIR}";

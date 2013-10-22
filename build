@@ -1,24 +1,37 @@
 #!/bin/bash
 # cenbia main build script: nawawi@rutweb.com
 
+# check if bash
+if [ "x${BASH_VERSION}" = "x" ]; then
+    _false "This software require bash version 3 and above";
+else
+    if [ -n "${BASH_VERSINFO[0]}" ] && [ ${BASH_VERSINFO[0]} -lt 3 ]; then
+        _false "This software require bash version 3 and above";
+    fi
+fi
+
+source ./build.d/variables.sh;
+source ./build.d/functions.sh;
+[ -z "${_ARCH}" ] && { echo "Load failed"; exit 1; };
+
 # echo functions
 _echo() {
     local msg="$1";
     local status="$2";
     if [ "$status" = "false" ]; then
-        echo "[ERROR] $msg";
+        echo "@@ ERROR: $msg";
         return 1;
     elif [ "$status" = "true" ]; then
-        echo "[SUCCESS] $msg";
+        echo "@@ SUCCESS: $msg";
         return 0;
     fi
-    echo "[BUILD] $msg";
+    echo "@@ BUILD: $msg";
     return 0;
 }
 
 _exit() {
     local msg="$1";
-    _echo "$msg";
+    echo "!! $msg";
     exit 0;
 }
 
@@ -34,28 +47,12 @@ _true() {
     exit 0;
 }
 
-# remove leading/trailing whitespace
-_trim() {
-    local str="$@";
-    str="${str#"${str%%[![:space:]]*}"}";
-    str="${str%"${str##*[![:space:]]}"}";
-    echo -n "${str}";
-}
-
-# check if bash
-if [ "x${BASH_VERSION}" = "x" ]; then
-    _false "This software require bash version 3 and above";
-else
-    if [ -n "${BASH_VERSINFO[0]}" ] && [ ${BASH_VERSINFO[0]} -lt 3 ]; then
-        _false "This software require bash version 3 and above";
-    fi
-fi
 
 _check_cmd() {
     local cmd nf;
-    cmd="gcc g++ cmake make nasm autoconf ";
-    cmd+="automake sed install libtool patch ";
-    cmd+="rm grep rsync wget date cp mv";
+    cmd="perl gcc g++ cmake make nasm autoconf ";
+    cmd+="automake sed install libtool patch find cat ";
+    cmd+="rm grep egrep rsync wget date cp mv xargs";
     nf="";
     for x in $cmd; do
         if ! type -p $x &>/dev/null; then
@@ -101,13 +98,10 @@ _CENBIA_LIB_PATH="${_CENBIA_INST_PATH}/lib";
 _CENBIA_SHARE_PATH="${_CENBIA_INST_PATH}/share";
 _CENBIA_MAN_PATH="${_CENBIA_SHARE_PATH}/man";
 _CENBIA_DOC_PATH="${_CENBIA_SHARE_PATH}/doc";
-_CENBIA_ARCH="32";
-[ "$(uname -m | grep -c 64)" = "1" ] && _CENBIA_ARCH="64";
 export _CENBIA_ROOT_PATH _CENBIA_INST_PATH _CENBIA_LIB_PATH;
 export _CENBIA_SHARE_PATH _CENBIA_MAN_PATH;
 export _CENBIA_DOC_PATH;
 export _CENBIA_BUILD_PATH;
-export _CENBIA_ARCH;
 export _CENBIA_VERSION;
 export CC="gcc";
 export SMPFLAGS="-j2";
@@ -136,7 +130,7 @@ _copydev_done() {
         rm -rf ${_CENBIA_ROOT_PATH}-devel/${_CENBIA_ROOT_PATH}/.build;
         mv ${_CENBIA_ROOT_PATH}-devel/${_CENBIA_ROOT_PATH} ${_CENBIA_ROOT_PATH}-devel/;
         if cd ${_CENBIA_ROOT_PATH}-devel; then
-            local fdv="cenbia-${_CENBIA_VERSION}-${_CENBIA_ARCH}bit-devel.tar.gz";
+            local fdv="cenbia-${_CENBIA_VERSION}-${_ARCH}-devel.tar.gz";
             tar -zcf $fdv cenbia;
             if [ $? = 0 ]; then
                 mv $fdv  $_BUILD_PATH;
@@ -146,7 +140,7 @@ _copydev_done() {
         rm -rf ${_CENBIA_ROOT_PATH}-devel;
         if cd $dname; then
             if [ -d "${fname}" ]; then
-                local fdr="cenbia-${_CENBIA_VERSION}-${_CENBIA_ARCH}bit.tar.gz";
+                local fdr="cenbia-${_CENBIA_VERSION}-${_ARCH}.tar.gz";
                 tar --exclude="*/.build" -zcf $_BUILD_PATH/$fdr $fname;
 
             fi
@@ -224,7 +218,7 @@ _DOBUILD() {
     local f="$1";
     [ -z "${f}" ] && return 1;
     if [ -f "$_CENBIA_ROOT_PATH/.build/$f" ]; then
-        _echo "$f already build";
+        _echo "$f :: Done";
         return 1;
     fi
 
@@ -400,8 +394,7 @@ _FINISH() {
     sed -i -e "s|@ROOT_DIR|$_CENBIA_ROOT_PATH|g" $_CENBIA_ROOT_PATH/README;
 
     if [ -n "${_WITHOUT_DEV}" -a "${_WITHOUT_DEV}" = "yes" ]; then
-        [ -d "${_CENBIA_INST_PATH}/lib64" ] && rm -rf $_CENBIA_INST_PATH/lib64;
-        [ -d "${_CENBIA_INST_PATH}/lib32" ] && rm -rf $_CENBIA_INST_PATH/lib32;
+        [ -d "${_CENBIA_INST_PATH}/libsys" ] && rm -rf $_CENBIA_INST_PATH/libsys;
         _COPYLIB q;
     fi
     _copydev_done;
@@ -540,6 +533,7 @@ _MAIN() {
                     echo "Development directory not setup yet, run '$0 --dev' first";
                     exit 1;
                 fi
+                [ -f "${_CENBIA_ROOT_PATH}/.build/${arg}" ] && rm -f $_CENBIA_ROOT_PATH/.build/$arg;
                 _DOSET "dev";
                 _DOBUILD $arg;
                 _ok=1;

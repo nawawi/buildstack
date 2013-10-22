@@ -63,15 +63,11 @@ autoheader && autoconf || exit 1
 # Before configure; fix location of build dir in generated apxs
 sed -i -e "s|@exp_installbuilddir@|$INST_DIR/lib/httpd/build|g" support/apxs.in
 
-LDFLAGS="${LDFLAGS} -Wl,-z,relro,-z,now"
-LDFLAGS="${LDFLAGS} -ljemalloc";
+LDFLAGS+=" -Wl,-z,relro,-z,now";
+LDFLAGS+=" -ljemalloc";
 # rpath
-LDFLAGS="${LDFLAGS} -Wl,-rpath,$INST_DIR/lib/httpd";
-
+LDFLAGS+=" -Wl,-rpath,$INST_DIR/lib/httpd";
 export LDFLAGS;
-export LYNX_PATH=/usr/bin/links
-
-#--disable-cgid --disable-cgi \
 
 ./configure \
 --prefix=$INST_DIR \

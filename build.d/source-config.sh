@@ -4,6 +4,10 @@
 # This file contains functions to be used by all
 # shell scripts in the source directory.
 
+source ../../build.d/variables.sh;
+source ../../build.d/functions.sh;
+[ -z "${_ARCH}" ] && { echo "Load failed"; exit 1; };
+
 if [ -n "${_CENBIA_ROOT_PATH}" ]; then
     ROOT_DIR="${_CENBIA_ROOT_PATH}";
 else
@@ -21,25 +25,12 @@ export LD_LIBRARY_PATH=${INST_DIR}/lib:$LD_LIBRARY_PATH;
 export CFLAGS="-I${INST_DIR}/include";
 export CPPFLAGS="-I${INST_DIR}/include";
 export LDFLAGS="-L${INST_DIR}/lib";
-
-if [ -z "${_CENBIA_ARCH}" ]; then
-    if [ "$(uname -m | grep -c 64)" = "1" ]; then
-        _CENBIA_ARCH="64";
-    else
-        _CENBIA_ARCH="32";
-    fi
-    export _CENBIA_ARCH;
-fi
+export CXXFLAGS="";
 
 # rpath
-export CENBIA_RPATH="$INST_DIR/lib:$INST_DIR/lib${_CENBIA_ARCH}";
-export LDFLAGS="${LDFLAGS} -Wl,-rpath,${CENBIA_RPATH}";
+export CENBIA_RPATH="$INST_DIR/lib:$INST_DIR/libsys";
+export LDFLAGS+=" -Wl,-rpath,${CENBIA_RPATH}";
 
-# C strstr
-strstr() {
-  [ "${1#*$2*}" = "$1" ] && return 1
-  return 0
-}
 
 # remove source folder
 _clean_src() {
@@ -54,13 +45,13 @@ _getfile() {
     local url="$1";
     local file="$2";
     if [ -z "${url}" -o -z "${file}" ]; then
-        echo "Invalid parameter";
+        echo "${FUNCNAME}: Invalid parameter";
         return 1;
     fi
     if [ ! -f "${file}" ]; then
         wget -S -c --no-check-certificate $url -O ${file}.part;
         ret="$?";
-        [ "$ret" = "0" ] && mv ${file}.part $file;
+        [ "$ret" = "0" ] && mv -v ${file}.part $file;
         return $ret;
     fi
     return 1;
@@ -76,17 +67,18 @@ _extract_file() {
         if [ -f "${fdl}" ]; then
             local ext="${fdl##*.}";
             local opt="";
+            [ "${ext}" = "tar" ] && opt="-xf";
             [ "${ext}" = "gz" -o "${ext}" = "tgz" ] && opt="-zxf";
             [ "${ext}" = "bz2" -o "${ext}" = "tbz2" ] && opt="-jxf";
             [ -z "${ext}" -o -z "${opt}" ] && { echo "File extension not supported"; exit 1; };
             tar $opt $fdl;
             if [ "$?" -ne "0" ]; then
-                echo "Failed to extract file: ${file}";
+                echo ":: Failed to extract file: ${file}";
                 exit 1;
             fi
             return 0;
         elif [ -n "${dlurl}" ]; then
-            echo "${file} not found, downloading..";
+            echo ":: ${file} not found, downloading..";
             for url in $dlurl; do
                 if strstr "$url" "$file"; then
                     _getfile $url $fdl;
@@ -105,7 +97,7 @@ _extract_file() {
             return 0;
         fi
     fi
-    echo "Failed to extract file";
+    echo ":: Failed to extract file";
     exit 1;   
 }
 
@@ -113,12 +105,12 @@ _extract_file() {
 _change_dir() {
     local dir="$1";
     if [ -z "${dir}" -o "${dir}" = "/" -o "${dir}" = "." -o ! -d "${dir}" ]; then
-        echo "Failed to change directory";
+        echo ":: Failed to change directory";
         exit 1;
     fi
 
-    if ! cd ${dir} &>/dev/null; then
-        echo "Failed to change directory";
+    if ! pushd ${dir} &>/dev/null; then
+        echo ":: Failed to change directory";
         exit 1;
     fi
 }
@@ -128,7 +120,7 @@ _exit_when_failed() {
     local task="$1";
     local status="$2";
     if [ "$status" -ne "0" ]; then
-        echo "${task}: task failed";
+        echo ":: ${task}: task failed";
         exit 1;
     fi
 }
@@ -137,25 +129,26 @@ _exit_when_failed() {
 _exit_and_cleanup() {
     local status="$1";
     local dir="$2";
+    popd &>/dev/null;
     if [ "$status" = "0" ]; then
-        if [ -n "${dir}" -a "${dir}" != "/" -a "${dir}" != "." -a -d "../${dir}" ]; then
-            echo "Done";
-            rm -rf ../$dir;
+        if [ -n "${dir}" -a "${dir}" != "/" -a "${dir}" != "." -a -d "./${dir}" ]; then
+            echo ":: Done";
+            rm -rf ./$dir;
         fi
     else
-        echo "Failed";
+        echo ":: Failed";
     fi
     exit $status;
 }
 
 # prepare source directory
 _build_setup() {
-    echo "Setup.."
+    echo ":: Setup.."
     local file="$1";
     local dir="$2";
     local dlurl="$3";
     if [ -z "${file}" -a -z "${dir}" ]; then
-        echo "_build_setup(): Invalid parameter";
+        echo "${FUNCNAME}: Invalid parameter";
         exit;
     fi
     _clean_src "${dir}";
@@ -171,8 +164,10 @@ _build_setup_and_patch() {
 
 # run dopatch.sh in patches folder
 _apply_patches() {
-    echo "Apply patching..";
-    [ -f "../patches/dopatch.sh" ] && sh ../patches/dopatch.sh;
+    if [ -f "../patches/dopatch.sh" ]; then
+        echo ":: Patching..";
+        bash ../patches/dopatch.sh;
+    fi
 }
 
 # check require command: eg; _require ls ps
@@ -181,9 +176,8 @@ _require() {
     for b in $bin; do
         [ "x${b}" = "x" ] && continue;
         if ! type -p $b &>/dev/null; then
-            echo "This script require $bin";
+            echo ":: This script require $bin";
             exit 1;
         fi
     done
 }
-
