@@ -147,9 +147,10 @@ if [ "$ret" = "0" ]; then
     chown nobody:nobody $ROOT_DIR/data/log/php-fpm;
 
     cp -fv ../config/php-fpm.conf $_CONFIG_DIR/php-fpm.conf;
-    cp -fv ../config/php-fpm-*.conf $_CONFIG_DIR/php-fpm.d/;
+    cp -fv ../config/php-fpm-*.conf $_CONFIG_DIR/php-fpm.d/default.conf;
     cp -fv ../config/php-fpm-control.sh $INST_DIR/bin/php-fpm-control;
     cp -fv ../config/php.ini $_CONFIG_DIR/php.ini;
+    rm -f $_CONFIG_DIR/php-fpm-default.conf;
 
     for f in $INST_DIR/bin/php-fpm-control $_CONFIG_DIR/php-fpm.conf $_CONFIG_DIR/php-fpm.d/*.conf $_CONFIG_DIR/php.ini; do
         sed -i -e "s|@INST_DIR|$INST_DIR|g" $f;

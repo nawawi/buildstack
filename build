@@ -1,18 +1,8 @@
 #!/bin/bash
 # cenbia main build script: nawawi@rutweb.com
 
-# check if bash
-if [ "x${BASH_VERSION}" = "x" ]; then
-    _false "This software require bash version 3 and above";
-else
-    if [ -n "${BASH_VERSINFO[0]}" ] && [ ${BASH_VERSINFO[0]} -lt 3 ]; then
-        _false "This software require bash version 3 and above";
-    fi
-fi
-
-source ./build.d/variables.sh;
-source ./build.d/functions.sh;
-[ -z "${_ARCH}" ] && { echo "Load failed"; exit 1; };
+. ./build.d/bootstrap.sh;
+[ -z "${_BOOTSTRAP}" ] && { echo "Load failed"; exit 1; };
 
 # echo functions
 _echo() {
@@ -60,7 +50,7 @@ _check_cmd() {
         fi
     done
     [ -n "${nf}" ] && {
-        _false "This software require '$(_trim "${nf}")' command";
+        _false "This software require '$(trim "${nf}")' command";
     }
 }
 _check_cmd;
@@ -89,7 +79,7 @@ fi
 if [ ! -f "$_BUILD_PATH/build.d/cenbia-version" ]; then
     _false "Version file not found";
 fi
-_CENBIA_VERSION="$(cat $_BUILD_PATH/build.d/cenbia-version)";
+_CENBIA_VERSION="$(_gfile $_BUILD_PATH/build.d/cenbia-version)";
 
 _CENBIA_BUILD_PATH=$_BUILD_PATH;
 [ "x${_CENBIA_ROOT_PATH}" = "x" ] && _CENBIA_ROOT_PATH="/opt/cenbia";
@@ -163,12 +153,12 @@ if [ ! -f $_BUILD_SOURCE ]; then
     _false "${_BUILD_SOURCE} not found";
 fi
 
-_PACKAGE="$(grep -v ^# ${_BUILD_SOURCE})";
+_PACKAGE="$(_gfile ${_BUILD_SOURCE})";
 
 # bin exclude, never remove
 _BIN_LIST="${_BUILD_PATH}/build.d/utils-bin.list";
 if [ -f $_BIN_LIST ]; then
-    _UTILS_BIN="${_UTILS_BIN} $(grep -v ^# ${_BIN_LIST})";
+    _UTILS_BIN+=" $(_gfile ${_BIN_LIST})";
 fi
 
 trap "{ _exit 'Quit Abort'; exit 1; }" SIGINT SIGTERM SIGHUP SIGKILL SIGABRT;
@@ -401,7 +391,7 @@ _FINISH() {
 }
 
 _HELP() {
-cat << _END_
+_cat << _END_
 
 Usage: $0 [option..] | [source]
 
@@ -485,7 +475,7 @@ _PKG_CLEAN() {
 }
 
 _HELLO() {
-cat << _END_
+_cat << _END_
 
 Cenbia BuildStack $(date)
 Type '$0 -h' for options

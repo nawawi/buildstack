@@ -4,9 +4,10 @@
 # This file contains functions to be used by all
 # shell scripts in the source directory.
 
-source ../../build.d/variables.sh;
-source ../../build.d/functions.sh;
-[ -z "${_ARCH}" ] && { echo "Load failed"; exit 1; };
+if [ "x${_BOOTSTRAP}" = "x" ]; then
+    . ../../build.d/bootstrap.sh;
+fi
+[ -z "${_BOOTSTRAP}" ] && { echo "Load failed"; exit 1; };
 
 if [ -n "${_CENBIA_ROOT_PATH}" ]; then
     ROOT_DIR="${_CENBIA_ROOT_PATH}";

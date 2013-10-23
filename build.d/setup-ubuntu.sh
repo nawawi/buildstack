@@ -2,7 +2,7 @@
 # ubuntu package
 apt-get install \
 build-essential \
-coreutils rsync patch wget \
+bash coreutils rsync patch wget \
 cmake \
 ccache \
 nasm autoconf automake libtool \
