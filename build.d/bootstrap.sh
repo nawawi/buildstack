@@ -41,6 +41,7 @@ strstr() {
   [ "${1#*$2*}" = "$1" ] && return 1
   return 0
 }
+export -f strstr;
 
 # remove leading/trailing whitespace
 trim() {
@@ -49,6 +50,7 @@ trim() {
     str="${str%"${str##*[![:space:]]}"}";
     echo -n "${str}";
 }
+export -f trim;
 
 _cat() {
     local INPUTS=( "${@:-"-"}" )
@@ -69,6 +71,7 @@ _cat() {
     done
     return 0;
 }
+export -f _cat;
 
 # read file and remove leading #
 _gfile() {
@@ -83,4 +86,4 @@ _gfile() {
         done;
     fi
 }
-
+export -f _gfile;

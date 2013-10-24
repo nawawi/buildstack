@@ -4,7 +4,7 @@
 . ./build.d/bootstrap.sh;
 [ -z "${_BOOTSTRAP}" ] && { echo "Load failed"; exit 1; };
 
-# echo functions
+# functions
 _echo() {
     local msg="$1";
     local status="$2";
@@ -37,7 +37,6 @@ _true() {
     exit 0;
 }
 
-
 _check_cmd() {
     local cmd nf;
     cmd="perl gcc g++ cmake make nasm autoconf ";
@@ -54,45 +53,35 @@ _check_cmd() {
     }
 }
 _check_cmd;
+trap "{ _exit 'Quit Abort'; exit 1; }" SIGINT SIGTERM SIGHUP SIGKILL SIGABRT;
 
 # setting
-_WITHOUT_MAN="no";
-_WITHOUT_DOC="no";
-_WITHOUT_INFO="no";
-_WITHOUT_STATIC="no";
-_WITHOUT_DEV="no";
-_WITHOUT_STRIP="no";
-_WITHOUT_UTILS="no";
-_REBUILD="no";
+_BUILD_PATH="$(dirname $0)";
+[ $_BUILD_PATH = "." ] && _BUILD_PATH="$(pwd)";
+[ ! -f "$_BUILD_PATH/build.d/cenbia-version" ] && _false "Version file not found";
+
+_WITHOUT_MAN="${_WITHOUT_MAN:-"no"}";
+_WITHOUT_DOC="${_WITHOUT_DOC:-"no"}";
+_WITHOUT_INFO="${_WITHOUT_INFO:-"no"}";
+_WITHOUT_STATIC="${_WITHOUT_STATIC:-"no"}";
+_WITHOUT_DEV="${_WITHOUT_DEV:-"no"}";
+_WITHOUT_STRIP="${_WITHOUT_STRIP:-"no"}";
+_WITHOUT_UTILS="${_WITHOUT_UTILS:-"no"}";
+_REBUILD="${_REBUILD:-"no"}";
 
 # mandatory
 _UTILS_BIN="curl openssl iconv php php-fpm php-cgi ";
 _UTILS_BIN+="httpd mysqld mysql checkport ";
 _UTILS_BIN+="cenbia cenbia-first-setup cenbia-start cenbia-stop cenbia-restart";
 
-# path
-_BUILD_PATH="$(dirname $0)";
-if [ $_BUILD_PATH = "." ]; then
-    _BUILD_PATH="$(pwd)";
-fi
-
-if [ ! -f "$_BUILD_PATH/build.d/cenbia-version" ]; then
-    _false "Version file not found";
-fi
-_CENBIA_VERSION="$(_gfile $_BUILD_PATH/build.d/cenbia-version)";
-
-_CENBIA_BUILD_PATH=$_BUILD_PATH;
-[ "x${_CENBIA_ROOT_PATH}" = "x" ] && _CENBIA_ROOT_PATH="/opt/cenbia";
-_CENBIA_INST_PATH="${_CENBIA_ROOT_PATH}/stack";
-_CENBIA_LIB_PATH="${_CENBIA_INST_PATH}/lib";
-_CENBIA_SHARE_PATH="${_CENBIA_INST_PATH}/share";
-_CENBIA_MAN_PATH="${_CENBIA_SHARE_PATH}/man";
-_CENBIA_DOC_PATH="${_CENBIA_SHARE_PATH}/doc";
-export _CENBIA_ROOT_PATH _CENBIA_INST_PATH _CENBIA_LIB_PATH;
-export _CENBIA_SHARE_PATH _CENBIA_MAN_PATH;
-export _CENBIA_DOC_PATH;
-export _CENBIA_BUILD_PATH;
-export _CENBIA_VERSION;
+export _CENBIA_VERSION="$(_gfile $_BUILD_PATH/build.d/cenbia-version)";
+export _CENBIA_BUILD_PATH=$_BUILD_PATH;
+export _CENBIA_ROOT_PATH="${_CENBIA_ROOT_PATH:-"/opt/cenbia"}";
+export _CENBIA_INST_PATH="${_CENBIA_INST_PATH:-"${_CENBIA_ROOT_PATH}/stack"}";
+export _CENBIA_LIB_PATH="${_CENBIA_LIB_PATH:-"${_CENBIA_INST_PATH}/lib"}";
+export _CENBIA_SHARE_PATH="${_CENBIA_SHARE_PATH:-"${_CENBIA_INST_PATH}/share"}";
+export _CENBIA_MAN_PATH="${_CENBIA_MAN_PATH:-"${_CENBIA_SHARE_PATH}/man"}";
+export _CENBIA_DOC_PATH="${_CENBIA_DOC_PATH:-"${_CENBIA_SHARE_PATH}/doc"}";
 export CC="gcc";
 export SMPFLAGS="-j2";
 
@@ -147,11 +136,8 @@ _copydev_done() {
 }
 
 # set source file
-_BUILD_SOURCE="${_BUILD_PATH}/build.d/source.list";
-
-if [ ! -f $_BUILD_SOURCE ]; then
-    _false "${_BUILD_SOURCE} not found";
-fi
+_BUILD_SOURCE="${_BUILD_SOURCE:-"${_BUILD_PATH}/build.d/source.list"}";
+[ ! -f $_BUILD_SOURCE ] && _false "${_BUILD_SOURCE} not found";
 
 _PACKAGE="$(_gfile ${_BUILD_SOURCE})";
 
@@ -161,7 +147,6 @@ if [ -f $_BIN_LIST ]; then
     _UTILS_BIN+=" $(_gfile ${_BIN_LIST})";
 fi
 
-trap "{ _exit 'Quit Abort'; exit 1; }" SIGINT SIGTERM SIGHUP SIGKILL SIGABRT;
 
 _DOSET() {
     if [ -n "$1" -a "$1" = "dist" ]; then
