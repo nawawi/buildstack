@@ -74,7 +74,7 @@ _UTILS_BIN="curl openssl iconv php php-fpm php-cgi ";
 _UTILS_BIN+="httpd mysqld mysql checkport ";
 _UTILS_BIN+="cenbia cenbia-first-setup cenbia-start cenbia-stop cenbia-restart";
 
-export _CENBIA_VERSION="$(_gfile $_BUILD_PATH/build.d/cenbia-version)";
+export _CENBIA_VERSION="$(< $_BUILD_PATH/build.d/cenbia-version)";
 export _CENBIA_BUILD_PATH=$_BUILD_PATH;
 export _CENBIA_ROOT_PATH="${_CENBIA_ROOT_PATH:-"/opt/cenbia"}";
 export _CENBIA_INST_PATH="${_CENBIA_INST_PATH:-"${_CENBIA_ROOT_PATH}/stack"}";
