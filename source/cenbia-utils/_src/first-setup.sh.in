@@ -1,0 +1,24 @@
+#!/bin/bash
+# cenbia setup script: nawawi@rutweb.com
+
+ROOT_PATH="@ROOT_DIR";
+
+. ${ROOT_PATH}/scripts/bootstrap.sh &>/dev/null || { echo "Bootstrap failed"; exit 1; }
+
+if ! grep -q nobody /etc/group &>/dev/null; then
+    groupadd nobody &>/dev/null;    
+fi
+
+chown -R nobody:nobody $ROOT_PATH/data/mariadb;
+chown -R nobody:nobody $ROOT_PATH/data/php-fpm;
+chown -R nobody:nobody $ROOT_PATH/data/run/php-fpm;
+chown -R nobody:nobody $ROOT_PATH/data/log/php-fpm;
+chown -R nobody:nobody $ROOT_PATH/data/run/mysqld;
+
+if [ -f "/etc/hosts" ]; then
+    if ! grep -q localhost /etc/hosts &>/dev/null; then
+        echo "127.0.0.1 localhost localhost.localdomain" >> /etc/hosts;
+    fi
+fi
+
+exit 0;

@@ -1,6 +1,5 @@
 #!/bin/bash
-source @INST_DIR/etc/cenbia-environment &>/dev/null || { echo "Failed to load library"; exit 1; };
-export LD_LIBRARY_PATH="@INST_DIR/lib/httpd:${LD_LIBRARY_PATH}";
+source @ROOT_DIR/scripts/bootstrap.sh &>/dev/null || { echo "Bootstrap failed"; exit 1; };
 
 ulimit -HSn 32768;
 
@@ -40,7 +39,7 @@ stop() {
 	    return 0;
 	fi
     _msg "Stopping $prog.";
-    HTTPPID="$(cat $pidfile)";
+    HTTPPID="$(< $pidfile)";
 	if [ -n "$HTTPPID" ]; then
         $httpd -k stop &>/dev/null;
 	    ret=$?;
@@ -77,7 +76,7 @@ stop() {
 reload() {
     _msg "Reloading $prog.";
     if [ -f "$pidfile" ]; then
-        HTTPPID="$(cat $pidfile)";
+        HTTPPID="$(< $pidfile)";
         if kill -HUP $HTTPPID 2>/dev/null ; then 
             _success;
             exit 0;
@@ -99,7 +98,7 @@ reload() {
 
 status() {
     if [ -f "$pidfile" ]; then
-        HTTPPID="$(cat $pidfile)";
+        HTTPPID="$(< $pidfile)";
         if kill -0 $HTTPPID 2>/dev/null ; then 
             echo "HTTPD running ($HTTPPID)";
             exit 0;

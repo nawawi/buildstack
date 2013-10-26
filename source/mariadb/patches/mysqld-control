@@ -1,5 +1,5 @@
 #!/bin/bash
-source @INST_DIR/etc/cenbia-environment &>/dev/null || { echo "Failed to load library"; exit 1; };
+source @ROOT_DIR/scripts/bootstrap.sh &>/dev/null || { echo "Bootstrap failed"; exit 1; };
 user="@USER";
 group="@USER";
 basedir="@INST_DIR";
@@ -112,7 +112,7 @@ stop() {
 	    return 0;
 	fi
     _msg "Stopping $prog";
-    MYSQLPID="$(cat $mypidfile)";
+    MYSQLPID="$(< $mypidfile)";
 	if [ -n "$MYSQLPID" ]; then
 	    kill "$MYSQLPID" >/dev/null 2>&1
 	    ret=$?;
@@ -149,7 +149,7 @@ restart(){
 
 status() {
     if [ -f "$mypidfile" ]; then
-        MYSQLPID="$(cat $mypidfile)";
+        MYSQLPID="$(< $mypidfile)";
         if kill -0 $MYSQLPID 2>/dev/null ; then 
             echo "MySQL running ($MYSQLPID)";
             exit 0;
@@ -171,7 +171,7 @@ status() {
 reload() {
     _msg "Reloading service MySQL";
     if [ -f "$mypidfile" ]; then
-        MYSQLPID="$(cat $mypidfile)";
+        MYSQLPID="$(< $mypidfile)";
         if kill -HUP $MYSQLPID 2>/dev/null ; then 
             _success;
             exit 0;

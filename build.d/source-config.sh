@@ -7,11 +7,11 @@
 if [ "x${_BOOTSTRAP}" = "x" ]; then
     . ../../build.d/bootstrap.sh &>/dev/null;
 fi
-[ -z "${_BOOTSTRAP}" ] && { echo "Load failed"; exit 1; };
+[ -z "${_BOOTSTRAP}" ] && { echo "Bootstrap failed"; exit 1; };
 
 _BUILD_PATH="${_CENBIA_BUILD_PATH:-"../.."}";
-ROOT_DIR="${_CENBIA_ROOT_PATH:-"/opt/cenbia"}";
-INST_DIR="${_CENBIA_INST_PATH:-"${ROOT_DIR}/stack"}";
+export ROOT_DIR="${_CENBIA_ROOT_PATH:-"/opt/cenbia"}";
+export INST_DIR="${_CENBIA_INST_PATH:-"${ROOT_DIR}/stack"}";
 export DOWNLOAD_DIR="${_BUILD_PATH}/tarball";
 export PATH="${INST_DIR}/bin:${PATH}";
 export LD_LIBRARY_PATH=${INST_DIR}/lib:$LD_LIBRARY_PATH;

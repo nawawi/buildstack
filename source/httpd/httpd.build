@@ -48,7 +48,7 @@ _build_setup_and_patch "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
 
 _USER="nobody";
 _GROUP="nobody";
-_WEBROOT="${ROOT_DIR}/site/default/webroot";
+_WEBROOT="${ROOT_DIR}/site/default/public_html";
 
 sed -i -e "s|@INST_DIR|$INST_DIR|g" ./config.layout;
 sed -i -e "s|@ROOT_DIR|$ROOT_DIR|g" ./config.layout;
@@ -85,7 +85,7 @@ export LDFLAGS;
 --with-suexec-bin=$INST_DIR/bin/suexec \
 --with-suexec-uidmin=100 \
 --with-suexec-gidmin=100 \
---with-suexec-userdir="webroot" \
+--with-suexec-userdir="public_html" \
 --enable-pie \
 --enable-mods-static=most \
 --enable-mods-shared="cgid sed spelling status dav dav_fs version proxy lbmethod_bybusyness lbmethod_byrequests lbmethod_bytraffic lbmethod_heartbeat proxy_ajp proxy_balancer proxy_connect proxy_express proxy_fcgi proxy_fdpass proxy_ftp proxy_http proxy_scgi" \
@@ -151,14 +151,15 @@ if [ "$ret" = "0" ]; then
 
     if [ -f "../patches/httpd-selfsign-cert.sh" ]; then
         cp -f ../patches/httpd-selfsign-cert.sh $INST_DIR/bin/httpd-selfsign-cert;
-        sed -i -e "s|@INST_DIR|$INST_DIR|g" $INST_DIR/bin/httpd-selfsign-cert;
+        sed -i -e "s|@INST_DIR|$INST_DIR|g" -e "s|@ROOT_DIR|$ROOT_DIR|g" $INST_DIR/bin/httpd-selfsign-cert;
         chmod 755 $INST_DIR/bin/httpd-selfsign-cert;
         $INST_DIR/bin/httpd-selfsign-cert &>/dev/null;
     fi
 
     if [ -f "../patches/httpd-control" ]; then
         cp -f ../patches/httpd-control $INST_DIR/bin/httpd-control;
-        sed -i -e "s|@INST_DIR|$INST_DIR|g" \
+        sed -i -e "s|@ROOT_DIR|$ROOT_DIR|g" \
+        -e "s|@INST_DIR|$INST_DIR|g" \
         -e "s|@USER|$_USER|g" \
         -e "s|@GROUP|$_GROUP|g" \
         $INST_DIR/bin/httpd-control;

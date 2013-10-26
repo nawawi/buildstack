@@ -1,0 +1,125 @@
+#!/bin/bash
+# cenbia startup script: nawawi@rutweb.com
+
+ROOT_PATH="@ROOT_DIR";
+INST_PATH="@INST_DIR";
+. ${ROOT_PATH}/scripts/bootstrap.sh &>/dev/null || { echo "Bootstrap failed"; exit 1; }
+
+if [ -n "${UID}" -a "${UID}" != "0" ]; then
+    echo "You need to run this program as root";
+    exit;
+fi
+
+cenbia-help() {
+_cat << _END_
+
+Available command:
+-----------------
+cenbia-start            - start service
+cenbia-stop             - stop service
+cenbia-restart          - restart service
+cenbia-help             - this menu
+
+httpd-control           - control script for http daemon
+mysqld-control          - control script for mariadb daemon
+php-fpm-control         - control script for php-fpm daemon
+httpd-selfsign-cert     - generate sel-sign https certificate
+
+_END_
+}
+export -f cenbia-help;
+
+_run_shell() {
+    export HOME=$ROOT_PATH;
+    export PS1="cenbia \W> ";
+    cd $ROOT_PATH;
+    if [ $# -gt 1 ]; then
+        local cmd=${@#shell};
+        $cmd;
+        exit $?;
+    fi
+    cenbia-help;
+    exec /bin/bash --norc --noprofile --login
+}
+
+cenbia-start() {
+    local ok=0;
+    for x in $@; do
+        if [ $x = "mysqld" -o "$x" = "mariadb" -o "$x" = "mysql" ]; then
+            mysqld-control start;
+            ok=1;
+        elif [ $x = "php-fpm" ]; then
+            php-fpm-control start;
+            ok=1;
+        elif [ $x = "httpd" -o "$x" = "http" ]; then
+            httpd-control start;
+            ok=1;
+        fi
+    done
+    if [ $ok = 0 ]; then
+        mysqld-control start;
+        php-fpm-control start;
+        httpd-control start;
+    fi
+}
+export -f cenbia-start;
+
+cenbia-stop() {
+    local ok=0;
+    for x in $@; do
+        if [ $x = "mysqld" -o "$x" = "mariadb" -o "$x" = "mysql" ]; then
+            mysqld-control stop;
+            ok=1;
+        elif [ $x = "php-fpm" ]; then
+            php-fpm-control stop;
+            ok=1;
+        elif [ $x = "httpd" -o "$x" = "http" ]; then
+            httpd-control stop;
+            ok=1;
+        fi
+    done
+    if [ $ok = 0 ]; then 
+        httpd-control stop;
+        php-fpm-control stop;
+        mysqld-control stop;
+    fi
+}
+export -f cenbia-stop;
+
+cenbia-restart() {
+    cenbia_stop $@;
+    cenbia_start $@;
+}
+export -f cenbia-restart;
+
+_arg_help() {
+_cat << _END_
+
+Usage: $0 [start|stop|restart] [all|httpd|mysqld|php-fpm]
+       $0 shell [command]
+
+$0 start    - start all service
+$0 stop     - stop all service
+$0 restart  - restart all service
+$0 shell    - execute cenbia cli
+
+_END_
+}
+
+case $1 in
+    start)
+        cenbia-start $@
+    ;;
+    stop)
+        cenbia-stop $@
+    ;;
+    restart)
+        cebia-restart $@
+    ;;
+    shell)
+        _run_shell $@
+    ;;
+    *)
+    _arg_help;
+    exit 1;
+esac

@@ -141,6 +141,7 @@ if [ "$ret" = "0" ]; then
     if [ -f "../patches/mysqld-control" ]; then
         _mname="${INST_DIR}/bin/mysqld-control";
         cp -f ../patches/mysqld-control $_mname;
+        sed -i -e "s|@ROOT_DIR|$ROOT_DIR|g" $_mname;
         sed -i -e "s|@INST_DIR|$INST_DIR|g" $_mname;
         sed -i -e "s|@LOG_FILE|$_logfile|g" $_mname;
         sed -i -e "s|@PID_FILE|$_pidfile|g" $_mname;

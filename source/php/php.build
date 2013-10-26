@@ -3,7 +3,7 @@
 # php: http://php.net/
 
 NAME="php";
-VER="5.4.20";
+VER="5.4.21";
 SRC_FILE="${NAME}-${VER}.tar.gz";
 SRC_DIR="${NAME}-${VER}";
 DLURL="http://my1.php.net/get/${SRC_FILE}/from/this/mirror ";

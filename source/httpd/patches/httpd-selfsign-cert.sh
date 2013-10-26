@@ -1,5 +1,5 @@
 #!/bin/bash
-source @INST_DIR/etc/cenbia-environment &>/dev/null || { echo "Failed to load library"; exit 1; };
+source @ROOT_DIR/scripts/bootstrap.sh &>/dev/null || { echo "Bootstrap failed"; exit 1; };
 cert_config="@INST_DIR/etc/httpd/cert_config";
 server_key="@INST_DIR/etc/httpd/ssl.key/server.key";
 server_crt="@INST_DIR/etc/httpd/ssl.crt/server.crt";

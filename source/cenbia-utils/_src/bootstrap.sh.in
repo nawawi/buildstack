@@ -1,0 +1,117 @@
+# -*-Shell-script-*-
+# shell scripts: nawawi@rutweb.com
+
+# check if bash
+if [ "x${BASH_VERSION}" = "x" ]; then
+    echo "This software require bash version 3 and above";
+    exit 1;
+else
+    if [ -n "${BASH_VERSINFO[0]}" ] && [ ${BASH_VERSINFO[0]} -lt 3 ]; then
+        echo "This software require bash version 3 and above";
+        exit 1;
+    fi
+fi
+
+export ROOT_PATH="@ROOT_DIR";
+export INST_PATH="@INST_DIR";
+_CLIBPATH="${INST_PATH}/lib:${INST_PATH}/lib/mysql:${INST_PATH}/lib/httpd";
+_CLIBPATH+="${INST_PATH}/libsys";
+
+if [ -n "${LD_LIBRARY_PATH}" ]; then
+    export LD_LIBRARY_PATH="${_CLIBPATH}:${LD_LIBRARY_PATH}";
+else
+    export LD_LIBRARY_PATH="${_CLIBPATH}";
+fi
+export PATH=${INST_PATH}/bin:$PATH;
+export HISTFILE=${ROOT_PATH}/.history;
+
+export _BOOTSTRAP=1;
+# -- functions --
+
+# C strstr
+strstr() {
+  [ "${1#*$2*}" = "$1" ] && return 1
+  return 0
+}
+export -f strstr;
+
+# remove leading/trailing whitespace
+trim() {
+    local str="$@";
+    str="${str#"${str%%[![:space:]]*}"}";
+    str="${str%"${str##*[![:space:]]}"}";
+    echo -n "${str}";
+}
+export -f trim;
+
+_cat() {
+    local INPUTS=( "${@:-"-"}" )
+    for i in "${INPUTS[@]}"; do
+        # quick hack to get /proc/*/cmdline content that end by null character
+        if [[ "${i}" =~ ^(/proc/[0-9]+/.*) ]] && [ -f "${i}" ]; then
+            echo $(< $i );
+            break;
+        fi
+        if [[ "${i}" != "-" ]]; then
+            exec 3< "${i}" || return 1;
+        else
+            exec 3<&0
+        fi
+        while read -ru 3; do
+            echo -E "${REPLY}";
+        done
+    done
+    return 0;
+}
+export -f _cat;
+
+# read file and remove leading #
+_gfile() {
+    [ $# -lt 1 ] && return 1;
+    local f="$1";
+    if [ -f $f ]; then
+        exec 3< $f;
+        while read -ru 3; do
+           [ -z "${REPLY}" ] && continue;
+           [[ "${REPLY}" =~ ^# ]] && continue;
+            echo -E "${REPLY}";
+        done;
+    fi
+}
+export -f _gfile;
+
+__pgrepf() {
+        [ -n "$1" ] && [ -d "/proc" ] || return 1;
+        local _mt="$1" _buf _f _pid _pidr="" _me=$$;
+        _mt=${_mt// /};
+        for _f in /proc/*/cmdline; do
+                _pid=$(basename $(dirname $_f));
+                ! [[ $_pid =~ ^([0-9]+)$ ]] && continue;
+                (( $_pid <= 9 )) && continue;
+                [ "$_pid" = "$_me" ] && continue;
+                [ -e $_f ] && _buf=$(< $_f);
+                [ -z "$_buf" ] && continue;
+                [[ $_buf = *$_mt* ]] && _pidr+="$_pid ";
+                unset _pid _buf;
+        done;
+        [ -n "$_pidr" ] && {
+                echo "$_pidr";
+                return 0;
+        };
+        return 1;
+}
+export -f __pgrepf;
+
+# internal
+_success() {
+    echo " OK! $@";
+}
+_failure() {
+    echo " FAILED! $@";
+}
+_printdot() {
+    echo -n ".";
+}
+_msg() {
+    echo -n "$@";
+}

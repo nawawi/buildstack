@@ -3,7 +3,7 @@
 # cenbia utils: http://www.cenbia.com
 
 NAME="cenbia-utils";
-VER="0.1";
+VER="0.2";
 SRC_FILE="${NAME}-${VER}.tar.gz";
 SRC_DIR="${NAME}-${VER}";
 DLURL="http://dl.cenbia.com/pkg";
@@ -14,8 +14,12 @@ source "../../build.d/source-config.sh" &>/dev/null;
 
 _build_setup "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
 
-make $SMPFLAGS
+sed -e "s|ROOT_DIR=.*|ROOT_DIR=${ROOT_DIR}|g" \
+    -e "s|INST_DIR=.*|INST_DIR=${INST_DIR}|g" Makefile.in >Makefile
+
+make ROOT_DIR=$ROOT_DIR INST_DIR=$INST_DIR $SMPFLAGS
 _exit_when_failed "Make" "$?";
 
-make DESTDIR=$INST_DIR install
+make ROOT_DIR=$ROOT_DIR INST_DIR=$INST_DIR install
+
 _exit_and_cleanup "$?" "${SRC_DIR}";

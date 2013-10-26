@@ -1,8 +1,7 @@
 #!/bin/bash
 # cenbia main build script: nawawi@rutweb.com
 
-. ./build.d/bootstrap.sh;
-[ -z "${_BOOTSTRAP}" ] && { echo "Load failed"; exit 1; };
+. ./build.d/bootstrap.sh &>/dev/null || { echo "Bootstrap failed"; exit 1; };
 
 # functions
 _echo() {
@@ -72,7 +71,7 @@ _REBUILD="${_REBUILD:-"no"}";
 # mandatory
 _UTILS_BIN="curl openssl iconv php php-fpm php-cgi ";
 _UTILS_BIN+="httpd mysqld mysql checkport ";
-_UTILS_BIN+="cenbia cenbia-first-setup cenbia-start cenbia-stop cenbia-restart";
+_UTILS_BIN+="cenbia";
 
 export _CENBIA_VERSION="$(< $_BUILD_PATH/build.d/cenbia-version)";
 export _CENBIA_BUILD_PATH=$_BUILD_PATH;
@@ -319,40 +318,6 @@ _FINISH() {
                 rm -rf $_CENBIA_INST_PATH/bin/.tmp
             fi
         fi
-    fi
-
-    if [ -f "${_BUILD_PATH}/build.d/cenbia-environment" ]; then
-        [ ! -d "${_CENBIA_INST_PATH}/etc" ] && mkdir -p  $_CENBIA_INST_PATH/etc;
-        cp -f ${_BUILD_PATH}/build.d/cenbia-environment $_CENBIA_INST_PATH/etc/cenbia-environment;
-        sed -i -e "s|@INST_DIR|$_CENBIA_INST_PATH|g" $_CENBIA_INST_PATH/etc/cenbia-environment;
-        sed -i -e "s|@ROOT_DIR|$_CENBIA_ROOT_PATH|g" $_CENBIA_INST_PATH/etc/cenbia-environment;
-    fi
-    if [ -f "${_BUILD_PATH}/build.d/console.sh" ]; then
-        _cbin="${_CENBIA_ROOT_PATH}/cenbia";
-        cp -f ${_BUILD_PATH}/build.d/console.sh $_cbin;
-        sed -i -e "s|@ROOT_DIR|$_CENBIA_ROOT_PATH|g" $_cbin;
-        sed -i -e "s|@INST_DIR|$_CENBIA_INST_PATH|g" $_cbin;
-        chmod 755 $_cbin;
-    fi
-    if [ -f "${_BUILD_PATH}/build.d/cenbia-start.sh" ]; then
-        _cbin="${_CENBIA_INST_PATH}/bin/cenbia-start";
-        cp -f ${_BUILD_PATH}/build.d/cenbia-start.sh $_cbin;
-        sed -i -e "s|@ROOT_DIR|$_CENBIA_ROOT_PATH|g" $_cbin;
-        sed -i -e "s|@INST_DIR|$_CENBIA_INST_PATH|g" $_cbin;
-        chmod 755 $_cbin;
-        cwd=$(pwd);
-        if cd $_CENBIA_INST_PATH/bin; then
-            ln -sf cenbia-start cenbia-stop;
-            ln -sf cenbia-start cenbia-restart;
-            cd $cwd;
-        fi
-    fi
-    if [ -f "${_BUILD_PATH}/build.d/cenbia-first-setup.sh" ]; then
-        _cbin="${_CENBIA_INST_PATH}/bin/cenbia-first-setup";
-        cp -f ${_BUILD_PATH}/build.d/cenbia-first-setup.sh $_cbin;
-        sed -i -e "s|@ROOT_DIR|$_CENBIA_ROOT_PATH|g" $_cbin;
-        sed -i -e "s|@INST_DIR|$_CENBIA_INST_PATH|g" $_cbin;
-        chmod 755 $_cbin;
     fi
 
     [ -d "${_CENBIA_INST_PATH}/etc/init.d" ] && rm -rf $_CENBIA_INST_PATH/etc/init.d;

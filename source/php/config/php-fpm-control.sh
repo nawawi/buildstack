@@ -1,6 +1,5 @@
 #!/bin/bash
-source @INST_DIR/etc/cenbia-environment &>/dev/null || { echo "Failed to load library"; exit 1; };
-export LD_LIBRARY_PATH="@INST_DIR/lib/phpfpm:${LD_LIBRARY_PATH}";
+source @ROOT_DIR/scripts/bootstrap.sh &>/dev/null || { echo "Bootstrap failed"; exit 1; };
 
 phpfpm="@INST_DIR/bin/php-fpm";
 pidfile="@ROOT_DIR/data/run/php-fpm/php-fpm.pid";
@@ -28,7 +27,7 @@ stop() {
 	    return 0;
 	fi
     _msg "Stopping $prog";
-    PHPFPMPID="$(cat $pidfile)";
+    PHPFPMPID="$(< $pidfile)";
 	if [ -n "$PHPFPMPID" ]; then
 	    kill "$PHPFPMPID" >/dev/null 2>&1
 	    ret=$?;
@@ -62,7 +61,7 @@ stop() {
 reload() {
     _msg "Reloading $prog";
     if [ -f "$pidfile" ]; then
-        PHPFPMPID="$(cat $pidfile)";
+        PHPFPMPID="$(< $pidfile)";
         if kill -USR2 $PHPFPMPID 2>/dev/null ; then 
             _success;
             exit 0;
@@ -84,7 +83,7 @@ reload() {
 
 status() {
     if [ -f "$pidfile" ]; then
-        PHPFPMPID="$(cat $pidfile)";
+        PHPFPMPID="$(< $pidfile)";
         if kill -0 $PHPFPMPID 2>/dev/null ; then 
             echo "php-fpm running ($PHPFPMPID)";
             exit 0;

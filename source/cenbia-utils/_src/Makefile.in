@@ -1,0 +1,30 @@
+ROOT_DIR=
+INST_DIR=
+
+all: clean checkport script
+distclean: clean
+	rm -f Makefile
+
+clean:
+	rm -f checkport *.sh
+
+script:
+	sed -e "s|@ROOT_DIR|${ROOT_DIR}|g" \
+		-e "s|@INST_DIR|${INST_DIR}|g" ./console.sh.in > ./console.sh
+	sed -e "s|@ROOT_DIR|${ROOT_DIR}|g" \
+		-e "s|@INST_DIR|${INST_DIR}|g" ./bootstrap.sh.in > ./bootstrap.sh
+	sed -e "s|@ROOT_DIR|${ROOT_DIR}|g" \
+		-e "s|@INST_DIR|${INST_DIR}|g" ./first-setup.sh.in > ./first-setup.sh
+
+checkport:
+	gcc -o checkport checkport.c
+	strip checkport
+
+install: checkport
+	install -m 755 checkport ${INST_DIR}/bin/checkport
+	install -m 755 console.sh ${ROOT_DIR}/cenbia
+	mkdir -p ${ROOT_DIR}/scripts
+	install -m 644 bootstrap.sh ${ROOT_DIR}/scripts/bootstrap.sh
+	install -m 755 first-setup.sh ${ROOT_DIR}/scripts/first-setup.sh
+
+
