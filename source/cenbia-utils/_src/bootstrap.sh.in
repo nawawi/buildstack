@@ -15,7 +15,7 @@ fi
 export ROOT_PATH="@ROOT_DIR";
 export INST_PATH="@INST_DIR";
 _CLIBPATH="${INST_PATH}/lib:${INST_PATH}/lib/mysql:${INST_PATH}/lib/httpd";
-_CLIBPATH+="${INST_PATH}/libsys";
+_CLIBPATH+="${INST_PATH}/host-libs";
 
 if [ -n "${LD_LIBRARY_PATH}" ]; then
     export LD_LIBRARY_PATH="${_CLIBPATH}:${LD_LIBRARY_PATH}";

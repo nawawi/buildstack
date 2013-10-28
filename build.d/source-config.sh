@@ -21,7 +21,7 @@ export LDFLAGS="-L${INST_DIR}/lib";
 export CXXFLAGS="";
 
 # rpath
-export CENBIA_RPATH="$INST_DIR/lib:$INST_DIR/libsys";
+export CENBIA_RPATH="$INST_DIR/lib:$INST_DIR/host-libs";
 export LDFLAGS+=" -Wl,-rpath,${CENBIA_RPATH}";
 
 

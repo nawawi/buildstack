@@ -1,6 +1,13 @@
 # source file place in ./source directory
 # order by priority
+
+# devtool
+autoconf
+automake
+libtool
 pkgconfig
+re2c
+# devtool end
 jemalloc
 gdbm
 zlib

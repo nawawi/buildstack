@@ -85,7 +85,24 @@ export CC="gcc";
 export SMPFLAGS="-j2";
 
 
-_copydev() {
+_copydist_share() {
+    local src="$1";
+    _echo "Copying $src";
+    if [ -n "$src" -a "$src" != "/" -a -n "${_CENBIA_ROOT_PATH}" -a "${_CENBIA_ROOT_PATH}" != "/" ]; then
+        [ ! -d "${_CENBIA_ROOT_PATH}-share" ] && mkdir -p ${_CENBIA_ROOT_PATH}-share;
+        if [ ! -d "${_CENBIA_ROOT_PATH}-share" ]; then
+            _false "Cannot create share files";
+        fi
+        if [ -e "${src}" -o -L "${src}" ]; then
+            cp -fau -P -p --parents $src ${_CENBIA_ROOT_PATH}-share/;
+            if [ $? = 0 ]; then
+                rm -rf $src;
+            fi
+        fi
+    fi
+}
+
+_copydist_dev() {
     local src="$1";
     _echo "Copying $src";
     if [ -n "$src" -a "$src" != "/" -a -n "${_CENBIA_ROOT_PATH}" -a "${_CENBIA_ROOT_PATH}" != "/" ]; then
@@ -93,7 +110,7 @@ _copydev() {
         if [ ! -d "${_CENBIA_ROOT_PATH}-devel" ]; then
             _false "Cannot create development files";
         fi
-        if [ -e $src ]; then
+        if [ -e "${src}" -o -L "${src}" ]; then
             cp -fau -P -p --parents $src ${_CENBIA_ROOT_PATH}-devel/;
             if [ $? = 0 ]; then
                 rm -rf $src;
@@ -101,36 +118,65 @@ _copydev() {
         fi
     fi
 }
-_copydev_done() {
+_copydist_done() {
     local dname="$(dirname $_CENBIA_ROOT_PATH)";
     local fname="$(basename $_CENBIA_ROOT_PATH)";
-    if [ -d "${_CENBIA_ROOT_PATH}-devel" ] && [ -d "${_CENBIA_ROOT_PATH}-devel/${_CENBIA_ROOT_PATH}" ]; then
-        rm -rf ${_CENBIA_ROOT_PATH}-devel/${_CENBIA_ROOT_PATH}/.build;
-        mv ${_CENBIA_ROOT_PATH}-devel/${_CENBIA_ROOT_PATH} ${_CENBIA_ROOT_PATH}-devel/;
-        if cd ${_CENBIA_ROOT_PATH}-devel; then
-            local fdv="cenbia-${_CENBIA_VERSION}-${_ARCH}-devel.tar.gz";
-            tar -zcf $fdv cenbia;
-            if [ $? = 0 ]; then
-                mv $fdv  $_BUILD_PATH;
+    local fdv="" fdd="" fdr="";
+    local comp=0;
+
+    if [ -d "${_CENBIA_ROOT_PATH}-devel" ]; then
+        if [ -d "${_CENBIA_ROOT_PATH}-devel/${_CENBIA_ROOT_PATH}" ]; then
+            rm -rf ${_CENBIA_ROOT_PATH}-devel/${_CENBIA_ROOT_PATH}/.build;
+            mv ${_CENBIA_ROOT_PATH}-devel/${_CENBIA_ROOT_PATH} ${_CENBIA_ROOT_PATH}-devel/;
+            if cd ${_CENBIA_ROOT_PATH}-devel; then
+                fdv="cenbia-${_CENBIA_VERSION}-${_ARCH}-devel.tar.gz";
+                tar -zcf $fdv cenbia;
+                if [ $? = 0 ]; then
+                    mv $fdv $_BUILD_PATH;
+                fi
             fi
         fi
         cd $_BUILD_PATH;
         rm -rf ${_CENBIA_ROOT_PATH}-devel;
-        if cd $dname; then
-            if [ -d "${fname}" ]; then
-                local fdr="cenbia-${_CENBIA_VERSION}-${_ARCH}.tar.gz";
-                tar --exclude="*/.build" -zcf $_BUILD_PATH/$fdr $fname;
+        comp=1;
+    fi
 
+    if [ -d "${_CENBIA_ROOT_PATH}-share" ]; then
+        if [ -d "${_CENBIA_ROOT_PATH}-share/${_CENBIA_ROOT_PATH}" ]; then
+            rm -rf ${_CENBIA_ROOT_PATH}-share/${_CENBIA_ROOT_PATH}/.build;
+            mv ${_CENBIA_ROOT_PATH}-share/${_CENBIA_ROOT_PATH} ${_CENBIA_ROOT_PATH}-share/;
+            if cd ${_CENBIA_ROOT_PATH}-share; then
+                fdd="cenbia-${_CENBIA_VERSION}-${_ARCH}-share.tar.gz";
+                tar -zcf $fdd cenbia;
+                if [ $? = 0 ]; then
+                    mv $fdd $_BUILD_PATH;
+                fi
             fi
         fi
-
         cd $_BUILD_PATH;
-        if [ "$?" = "0" -a -f "${fdv}" -a -n "${dname}" ]; then
-            tar -C $dname/ -zxvf $fdv
-        fi
+        rm -rf ${_CENBIA_ROOT_PATH}-share;
+        comp=1;
+    fi
 
-        [ -f $fdr ] && _echo "Release file: ${_BUILD_PATH}/${fdr}";
-        [ -f $fdv ] && _echo "Development file: ${_BUILD_PATH}/${fdr}";
+    cd $_BUILD_PATH;
+    if [ $comp = 1 ]; then
+        if cd $dname; then
+            if [ -d "${fname}" ]; then
+                fdr="cenbia-${_CENBIA_VERSION}-${_ARCH}.tar.gz";
+                tar --exclude="*/.build" -zcf $_BUILD_PATH/$fdr $fname;
+                if [ "$?" = "0" ]; then
+                    if [ -f "${_BUILD_PATH}/${fdv}" -a -n "${dname}" ]; then
+                        tar -C $dname/ -zxf $_BUILD_PATH/$fdv
+                    fi
+                    if [ -f "${_BUILD_PATH}/${fdd}" -a -n "${dname}" ]; then
+                        tar -C $dname/ -zxf $_BUILD_PATH/$fdd
+                    fi
+                fi
+            fi
+        fi
+        [ -f "${_BUILD_PATH}/${fdr}" ] && _echo "Release file: ${_BUILD_PATH}/${fdr}";
+        [ -f "${_BUILD_PATH}/${fdv}" ] && _echo "Development file: ${_BUILD_PATH}/${fdv}";
+        [ -f "${_BUILD_PATH}/${fdd}" ] && _echo "Support file: ${_BUILD_PATH}/${fdd}";
     fi
 }
 
@@ -240,57 +286,63 @@ _FINISH() {
     if [ -n "${_CENBIA_INST_PATH}" -a "${_CENBIA_INST_PATH}" != "/" -a "${_CENBIA_INST_PATH}" != "." ]; then
         
         if [ -n "${_WITHOUT_MAN}" -a "${_WITHOUT_MAN}" = "yes" ]; then
-            _copydev $_CENBIA_INST_PATH/share/man;
-            _copydev $_CENBIA_INST_PATH/share/httpd/manual;
+            _copydist_share $_CENBIA_INST_PATH/share/man;
+            _copydist_share $_CENBIA_INST_PATH/share/httpd/manual;
         fi
         
         if [ -n "${_WITHOUT_DOC}" -a "${_WITHOUT_DOC}" = "yes" ]; then
-            _copydev $_CENBIA_INST_PATH/share/doc;
-            _copydev $_CENBIA_INST_PATH/share/gtk-doc;
+            _copydist_share $_CENBIA_INST_PATH/share/doc;
+            _copydist_share $_CENBIA_INST_PATH/share/gtk-doc;
+            _copydist_share $_CENBIA_INST_PATH/share/example;
         fi
         
 
         if [ -n "${_WITHOUT_INFO}" -a "${_WITHOUT_INFO}" = "yes" ]; then
-            _copydev $_CENBIA_INST_PATH/share/info;
+            _copydist_share $_CENBIA_INST_PATH/share/info;
         fi
         
 
         if [ -n "${_WITHOUT_STATIC}" -a "${_WITHOUT_STATIC}" = "yes" ]; then
             for f in $(find $_CENBIA_INST_PATH/lib/ -name "*.a*"); do
-                _copydev $f;
+                _copydist_dev $f;
             done
         fi
         
 
         if [ -n "${_WITHOUT_DEV}" -a "${_WITHOUT_DEV}" = "yes" ]; then
             for f in $(find $_CENBIA_INST_PATH/lib/ -name "*.a*"); do
-                _copydev $f;
+                _copydist_dev $f;
             done
             for f in $(find $_CENBIA_INST_PATH/lib/ -name "*.la*"); do
-                _copydev $f;
+                _copydist_dev $f;
             done
             for f in $(find $_CENBIA_INST_PATH/ -name "*-config"); do
-                _copydev $f;
+                _copydist_dev $f;
             done
             for f in $(find $_CENBIA_INST_PATH/ -name "*.exp"); do
-                _copydev $f;
+                _copydist_dev $f;
             done
-            _copydev $_CENBIA_INST_PATH/share/aclocal;
-            _copydev $_CENBIA_INST_PATH/include;
-            _copydev $_CENBIA_INST_PATH/share/mysql-test;
-            _copydev $_CENBIA_INST_PATH/share/mysql-bench;
-            _copydev $_CENBIA_INST_PATH/lib/xml2Conf.sh;
-            _copydev $_CENBIA_INST_PATH/lib/xsltConf.sh;
-            _copydev $_CENBIA_INST_PATH/lib/pkgconfig;
-            _copydev $_CENBIA_INST_PATH/bin/pkg-config;
-            _copydev $_CENBIA_INST_PATH/man;
+            _copydist_dev $_CENBIA_INST_PATH/share/aclocal;
+            _copydist_dev $_CENBIA_INST_PATH/include;
+            _copydist_dev $_CENBIA_INST_PATH/share/mysql-test;
+            _copydist_dev $_CENBIA_INST_PATH/share/mysql-bench;
+            _copydist_dev $_CENBIA_INST_PATH/lib/xml2Conf.sh;
+            _copydist_dev $_CENBIA_INST_PATH/lib/xsltConf.sh;
+            _copydist_dev $_CENBIA_INST_PATH/lib/pkgconfig;
+            _copydist_dev $_CENBIA_INST_PATH/bin/pkg-config;
+            _copydist_dev $_CENBIA_INST_PATH/man;
 
-            _copydev $_CENBIA_INST_PATH/pear;
-            _copydev $_CENBIA_INST_PATH/etc/php/pear.conf;
-            _copydev $_CENBIA_INST_PATH/lib/php/build;
-            _copydev $_CENBIA_INST_PATH/lib/httpd/build;
-            _copydev $_CENBIA_INST_PATH/lib/icu;
-            _copydev $_CENBIA_INST_PATH/lib/gettext;
+            _copydist_dev $_CENBIA_INST_PATH/pear;
+            _copydist_dev $_CENBIA_INST_PATH/etc/php/pear.conf;
+            _copydist_dev $_CENBIA_INST_PATH/lib/php/build;
+            _copydist_dev $_CENBIA_INST_PATH/lib/httpd/build;
+            _copydist_dev $_CENBIA_INST_PATH/lib/icu;
+            _copydist_dev $_CENBIA_INST_PATH/lib/gettext;
+
+            _copydist_dev $_CENBIA_INST_PATH/share/icu;
+            _copydist_dev $_CENBIA_INST_PATH/share/gettext;
+            _copydist_dev $_CENBIA_INST_PATH/share/gnats;
+
 
         fi
        
@@ -311,7 +363,7 @@ _FINISH() {
                 done
             fi
             for f in $_CENBIA_INST_PATH/bin/*; do
-                _copydev $f;
+                _copydist_dev $f;
             done
             if [ -d $_CENBIA_INST_PATH/bin/.tmp ]; then
                 mv $_CENBIA_INST_PATH/bin/.tmp/* $_CENBIA_INST_PATH/bin/ &>/dev/null;
@@ -334,10 +386,10 @@ _FINISH() {
     sed -i -e "s|@ROOT_DIR|$_CENBIA_ROOT_PATH|g" $_CENBIA_ROOT_PATH/README;
 
     if [ -n "${_WITHOUT_DEV}" -a "${_WITHOUT_DEV}" = "yes" ]; then
-        [ -d "${_CENBIA_INST_PATH}/libsys" ] && rm -rf $_CENBIA_INST_PATH/libsys;
+        [ -d "${_CENBIA_INST_PATH}/host-libs" ] && rm -rf $_CENBIA_INST_PATH/host-libs;
         _COPYLIB q;
     fi
-    _copydev_done;
+    _copydist_done;
 }
 
 _HELP() {

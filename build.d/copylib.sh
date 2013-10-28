@@ -3,7 +3,7 @@
 source "./build.d/source-config.sh" &>/dev/null;
 [ -z "${INST_DIR}" ] && { echo "Load config failed"; exit 1; };
 
-_DESPATH="${INST_DIR}/libsys";
+_DESPATH="${INST_DIR}/host-libs";
 
 # copy ld-linux* libc etc..etc..
 _noskip=0;
