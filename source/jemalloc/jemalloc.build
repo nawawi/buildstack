@@ -3,7 +3,7 @@
 # jemalloc: http://www.canonware.com/jemalloc
 
 NAME="jemalloc";
-VER="3.4.0";
+VER="3.4.1";
 SRC_FILE="${NAME}-${VER}.tar.bz2";
 SRC_DIR="${NAME}-${VER}";
 DLURL="http://www.canonware.com/download/jemalloc http://dl.cenbia.com/pkg";
