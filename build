@@ -38,8 +38,8 @@ _true() {
 
 _check_cmd() {
     local cmd nf;
-    cmd="perl gcc g++ cmake make nasm autoconf ";
-    cmd+="automake sed install libtool patch find cat ";
+    cmd="perl gcc g++ cmake make nasm ";
+    cmd+="sed install patch find cat ";
     cmd+="rm grep egrep rsync wget date cp mv xargs";
     nf="";
     for x in $cmd; do
@@ -87,7 +87,7 @@ export SMPFLAGS="-j2";
 
 _copydist_share() {
     local src="$1";
-    _echo "Copying $src";
+    _echo "${FUNCNAME} $src";
     if [ -n "$src" -a "$src" != "/" -a -n "${_CENBIA_ROOT_PATH}" -a "${_CENBIA_ROOT_PATH}" != "/" ]; then
         [ ! -d "${_CENBIA_ROOT_PATH}-share" ] && mkdir -p ${_CENBIA_ROOT_PATH}-share;
         if [ ! -d "${_CENBIA_ROOT_PATH}-share" ]; then
@@ -104,7 +104,7 @@ _copydist_share() {
 
 _copydist_dev() {
     local src="$1";
-    _echo "Copying $src";
+    _echo "${FUNCNAME} $src";
     if [ -n "$src" -a "$src" != "/" -a -n "${_CENBIA_ROOT_PATH}" -a "${_CENBIA_ROOT_PATH}" != "/" ]; then
         [ ! -d "${_CENBIA_ROOT_PATH}-devel" ] && mkdir -p ${_CENBIA_ROOT_PATH}-devel;
         if [ ! -d "${_CENBIA_ROOT_PATH}-devel" ]; then
@@ -342,6 +342,10 @@ _FINISH() {
             _copydist_dev $_CENBIA_INST_PATH/share/icu;
             _copydist_dev $_CENBIA_INST_PATH/share/gettext;
             _copydist_dev $_CENBIA_INST_PATH/share/gnats;
+
+            _copydist_dev $_CENBIA_INST_PATH/share/libtool;
+            _copydist_dev $_CENBIA_INST_PATH/share/autoconf;
+            _copydist_dev $(ls -d $_CENBIA_INST_PATH/share/automake*);
 
 
         fi
