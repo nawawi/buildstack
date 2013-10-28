@@ -1,0 +1,25 @@
+#!/bin/bash
+# cenbia build script: nawawi@rutweb.com
+# autoconf: http://www.gnu.org/software/autoconf
+
+NAME="autoconf";
+VER="2.69";
+SRC_FILE="${NAME}-${VER}.tar.gz";
+SRC_DIR="${NAME}-${VER}";
+DLURL="http://ftp.gnu.org/gnu/autoconf http://dl.cenbia.com/pkg";
+
+# load config
+source "../../build.d/source-config.sh" &>/dev/null;
+[ -z "${INST_DIR}" ] && { echo "${NAME}: Load config failed"; exit 1; };
+
+_build_setup "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
+
+./configure \
+--prefix=$INST_DIR
+_exit_when_failed "Configure" "$?";
+
+make $SMPFLAGS;
+_exit_when_failed "Make" "$?";
+
+make install;
+_exit_and_cleanup "$?" "${SRC_DIR}";
