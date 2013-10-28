@@ -14,29 +14,58 @@ DLURL+="http://dl.cenbia.com/pkg";
 source "../../build.d/source-config.sh" &>/dev/null;
 [ -z "${INST_DIR}" ] && { echo "${NAME}: Load config failed"; exit 1; };
 
+# bundle extension
+i=0;
+_EXT_NAME[$i]="pthreads";
+_EXT_VER[$i]="0.0.45";
+_EXT_SRC_FILE[$i]="${_EXT_NAME[$i]}-${_EXT_VER[$i]}.tgz";
+_EXT_SRC_DIR[$i]="${_EXT_NAME[$i]}-${_EXT_VER[$i]}";
+_EXT_CONFIGURE[$i]="--enable-pthreads=shared";
+_EXT_DLURL="http://pecl.php.net/get http://dl.cenbia.com/pkg";
+(( i++ ));
+
+# setup
 _build_setup_and_patch "${SRC_FILE}" "${SRC_DIR}" "${DLURL}";
 
-export CFLAGS+=" -fno-strict-aliasing -Wno-pointer-sign";
-export LDFLAGS+=" -ljemalloc -L$INST_DIR/lib/mysql";
+for (( x = 0 ; x < ${#_EXT_NAME[@]} ; x++ )); do
+    _clean_src "${_EXT_SRC_DIR[$x]}";
+    _extract_file "${_EXT_SRC_FILE[$x]}" "${_EXT_DLURL[$x]}";
+    if [ -d "${_EXT_SRC_DIR[$x]}" ]; then
+        mv -v ${_EXT_SRC_DIR[$x]} ./ext/${_EXT_NAME[$x]};
+    fi
+done
+
+CFLAGS+=" -fno-strict-aliasing -Wno-pointer-sign";
+LDFLAGS+=" -L$INST_DIR/lib/mysql";
+
 # rpath
-export LDFLAGS+=" -Wl,-rpath,$INST_DIR/lib/mysql";
+if [[ "${LDFLAGS}" = *rpath* ]]; then
+    LDFLAGS="${LDFLAGS/rpath,/rpath,${INST_DIR}/lib/mysql:}";
+else
+    LDFLAGS+=" -Wl,-rpath,$INST_DIR/lib/mysql";
+fi
 
+# php configuration failed to detect pthread if linking with jemalloc
+CFLAGS+=" -pthread";
+LDFLAGS+=" -ljemalloc";
 
-EXTENSION_DIR="${INST_DIR}/lib/php/modules";
-PEAR_INSTALLDIR="${INST_DIR}/pear"; 
-export EXTENSION_DIR;
-export PEAR_INSTALLDIR;
+export CFLAGS LDFLAGS;
+
+export EXTENSION_DIR="${INST_DIR}/lib/php/modules";
+export PEAR_INSTALLDIR="${INST_DIR}/pear"; 
 
 _CONFIG_DIR="${INST_DIR}/etc/php";
 export _CONFIG_DIR;
 
-if [ "${_B64}" = "1" -a ! -f "/usr/lib/libsybdb.so" ]; then
-    for fx in /usr/lib/x86_64-linux-gnu/libsybdb.so /usr/lib64/libsybdb.so; do
-        if [ -e $fx ]; then
-            ln -sf $fx /usr/lib/libsybdb.so;
-            break;
-        fi
-    done
+if [ "${_B64}" = "1" ]; then
+    if [ ! -f "/usr/lib/libsybdb.so" ]; then
+        for fx in /usr/lib/x86_64-linux-gnu/libsybdb.so /usr/lib64/libsybdb.so /lib64/libsybdb.so; do
+            if [ -e $fx ]; then
+                ln -sf $fx /usr/lib/libsybdb.so;
+                break;
+            fi
+        done
+    fi
 fi
 
 rm -f TSRM/tsrm_win32.h \
@@ -54,74 +83,90 @@ cat `aclocal --print-ac-dir`/{libtool,ltoptions,ltsugar,ltversion,lt~obsolete}.m
 touch configure.in
 ./buildconf --force;
 
-./configure --prefix=$INST_DIR \
---bindir=$INST_DIR/bin \
---sbindir=$INST_DIR/bin \
---libexecdir=$INST_DIR/bin \
---localstatedir=$ROOT_DIR/data \
---libdir=$INST_DIR/lib/php \
---sysconfdir=$_CONFIG_DIR \
---with-config-file-path=$_CONFIG_DIR \
---with-config-file-scan-dir=$_CONFIG_DIR/php.d \
---disable-debug \
---disable-phar \
---with-pic \
---disable-rpath \
---enable-gd-native-ttf \
---with-gettext \
---with-jpeg-dir=$INST_DIR \
---with-freetype-dir=$INST_DIR \
---with-kerberos=$INST_DIR \
---with-openssl=$INST_DIR \
---with-mcrypt=$INST_DIR \
---with-mhash=$INST_DIR \
---with-mysql=$INST_DIR \
---with-mysqli=$INST_DIR/bin/mysql_config \
---with-mysql-sock=$ROOT_DIR/data/mariadb/mysqld.sock \
---with-pcre-regex=$INST_DIR \
---with-pdo-mysql=shared,$INST_DIR \
---with-pdo-sqlite=shared,$INST_DIR \
---with-pear=$INST_DIR/pear \
---with-png-dir=$INST_DIR \
---with-xsl=$INST_DIR \
---with-zlib=$INST_DIR \
---with-zlib-dir=$INST_DIR \
---with-bz2=$INST_DIR \
---with-freetype-dir=$INST_DIR \
---with-gdbm=$INST_DIR \
---with-gettext=$INST_DIR \
---with-curl=$INST_DIR \
---with-gd \
---with-iconv=$INST_DIR \
---with-libxml-dir=$INST_DIR \
---with-mssql=shared,$INST_DIR \
---with-sqlite3=shared,$INST_DIR \
---with-xmlrpc=shared \
---with-imap=$INST_DIR \
---with-imap-ssl=$INST_DIR \
---enable-xml \
---enable-zip \
---enable-bcmath \
---enable-calendar \
---enable-ftp \
---enable-sockets \
---enable-json \
---enable-zip \
---enable-sysvmsg=shared \
---enable-sysvshm=shared \
---enable-sysvsem=shared \
---enable-posix \
---enable-fileinfo=shared \
---enable-intl \
---with-icu-dir=$INST_DIR \
---enable-fpm \
---enable-mbstring \
---enable-mysqlnd=shared \
---enable-dba=shared,$INST_DIR --with-db4=$INST_DIR \
---enable-pcntl=shared \
---enable-exif=shared \
---enable-sigchild
+_configure() {
 
+#--disable-rpath \
+#--disable-phar \
+
+./configure --prefix=$INST_DIR \
+    --bindir=$INST_DIR/bin \
+    --sbindir=$INST_DIR/bin \
+    --libexecdir=$INST_DIR/bin \
+    --localstatedir=$ROOT_DIR/data \
+    --libdir=$INST_DIR/lib/php \
+    --sysconfdir=$_CONFIG_DIR \
+    --with-config-file-path=$_CONFIG_DIR \
+    --with-config-file-scan-dir=$_CONFIG_DIR/php.d \
+    --disable-debug \
+    --disable-short-tags \
+    --with-pic \
+    --enable-gd-native-ttf \
+    --with-gettext \
+    --with-jpeg-dir=$INST_DIR \
+    --with-freetype-dir=$INST_DIR \
+    --with-kerberos=$INST_DIR \
+    --with-openssl=$INST_DIR \
+    --with-mcrypt=$INST_DIR \
+    --with-mhash=$INST_DIR \
+    --with-mysql=$INST_DIR \
+    --with-mysqli=$INST_DIR/bin/mysql_config \
+    --with-mysql-sock=$ROOT_DIR/data/mariadb/mysqld.sock \
+    --with-pcre-regex=$INST_DIR \
+    --with-pdo-mysql=shared,$INST_DIR \
+    --with-pdo-sqlite=shared,$INST_DIR \
+    --with-pear=$INST_DIR/pear \
+    --with-png-dir=$INST_DIR \
+    --with-xsl=$INST_DIR \
+    --with-zlib=$INST_DIR \
+    --with-zlib-dir=$INST_DIR \
+    --with-bz2=$INST_DIR \
+    --with-freetype-dir=$INST_DIR \
+    --with-gdbm=$INST_DIR \
+    --with-gettext=$INST_DIR \
+    --with-curl=$INST_DIR \
+    --with-gd \
+    --with-iconv=$INST_DIR \
+    --with-libxml-dir=$INST_DIR \
+    --with-mssql=shared,$INST_DIR \
+    --with-sqlite3=shared,$INST_DIR \
+    --with-xmlrpc=shared \
+    --with-imap=$INST_DIR \
+    --with-imap-ssl=$INST_DIR \
+    --enable-xml \
+    --enable-zip \
+    --enable-bcmath \
+    --enable-calendar \
+    --enable-ftp \
+    --enable-sockets \
+    --enable-json \
+    --enable-zip \
+    --enable-sysvmsg=shared \
+    --enable-sysvshm=shared \
+    --enable-sysvsem=shared \
+    --enable-posix \
+    --enable-fileinfo=shared \
+    --enable-intl \
+    --with-icu-dir=$INST_DIR \
+    --enable-fpm \
+    --enable-mbstring \
+    --enable-mysqlnd=shared \
+    --enable-dba=shared,$INST_DIR --with-db4=$INST_DIR \
+    --enable-pcntl=shared \
+    --enable-exif=shared \
+    --enable-sigchild \
+    --enable-maintainer-zts \
+    --with-tsrm-pthreads \
+    $*
+}
+
+config="";
+if [[ ${#_EXT_CONFIGURE[@]} > 0 ]]; then
+    for (( x = 0; x <  ${#_EXT_CONFIGURE[@]}; x++ )); do
+        config+="${_EXT_CONFIGURE[$x]} ";
+    done
+fi
+
+_configure $config;
 _exit_when_failed "Configure" "$?";
 
 make $SMPFLAGS;
