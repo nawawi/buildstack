@@ -21,7 +21,7 @@ _EXT_VER[$i]="0.0.45";
 _EXT_SRC_FILE[$i]="${_EXT_NAME[$i]}-${_EXT_VER[$i]}.tgz";
 _EXT_SRC_DIR[$i]="${_EXT_NAME[$i]}-${_EXT_VER[$i]}";
 _EXT_CONFIGURE[$i]="--enable-pthreads=shared";
-_EXT_DLURL="http://pecl.php.net/get http://dl.cenbia.com/pkg";
+_EXT_DLURL[$i]="http://pecl.php.net/get http://dl.cenbia.com/pkg";
 (( i++ ));
 
 # setup
